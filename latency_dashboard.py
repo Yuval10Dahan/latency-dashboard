@@ -1,11 +1,13 @@
 import streamlit as st
 st.set_page_config(page_title="Latency Test Results", layout="wide")
 
+import os
 import pandas as pd
 from sqlalchemy import create_engine
 
 # --- DB Connection ---
-DB_PATH = 'G:\\Yuval_Dahan\\Latency\\Latency_Results\\latency_results.db'  
+# DB_PATH = 'G:\\Yuval_Dahan\\Latency\\Latency_Results\\latency_results.db'  
+DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
 engine = create_engine(f'sqlite:///{DB_PATH}')
 
 @st.cache_data
