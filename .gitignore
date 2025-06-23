@@ -10,7 +10,7 @@ env/
 
 # Ignore system files
 .DS_Store
-Thumbs.db
+# Thumbs.db
 
 # Ignore PyInstaller executables
 *.spec
