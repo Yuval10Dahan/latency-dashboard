@@ -1,0 +1,22 @@
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore PyInstaller executables
+*.spec
+*.exe
+dist/
+build/
+
+# VSCode settings (optional)
+.vscode/
