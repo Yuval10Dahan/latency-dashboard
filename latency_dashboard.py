@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 
 
 
-# Inject JavaScript to auto-expand sidebar
+# Inject JavaScript to auto-expand the sidebar on page load
 components.html("""
     <script>
         window.addEventListener('load', function () {
