@@ -4,6 +4,22 @@ st.set_page_config(page_title="Latency Test Results", layout="wide")
 import os
 import pandas as pd
 from sqlalchemy import create_engine
+import streamlit.components.v1 as components
+
+
+
+# Inject JS to open sidebar automatically
+components.html("""
+    <script>
+        window.addEventListener('load', function () {
+            const sidebarButton = window.parent.document.querySelector('section[data-testid="stSidebar"] button[title="Expand sidebar"]');
+            if (sidebarButton) {
+                sidebarButton.click();
+            }
+        });
+    </script>
+""", height=0)
+
 
 # --- DB Connection ---
 # DB_PATH = 'G:\\Yuval_Dahan\\Latency\\Latency_Results\\latency_results.db'  
