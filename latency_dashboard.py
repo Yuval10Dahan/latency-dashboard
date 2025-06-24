@@ -4,7 +4,7 @@ st.set_page_config(page_title="Latency Test Results", layout="wide")
 import os
 import pandas as pd
 from sqlalchemy import create_engine
-import streamlit.components.v1 as components
+
 
 
 
