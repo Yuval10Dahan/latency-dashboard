@@ -4,51 +4,22 @@ st.set_page_config(page_title="Latency Test Results", layout="wide")
 import os
 import pandas as pd
 from sqlalchemy import create_engine
-import streamlit.components.v1 as components
 from PIL import Image
 
-
-
-# # Inject JavaScript to automatically click the sidebar expander button
-# components.html(
-#     """
-#     <script>
-#     window.onload = function() {
-#         const expandButton = window.parent.document.querySelector('[data-testid="stSidebarCollapseControl"]');
-#         if (expandButton && expandButton.innerText.includes("keyboard_double_arrow_right")) {
-#             expandButton.click();
-#         }
-#     }
-#     </script>
-#     """,
-#     height=0,
-#     width=0
-# )
-
-
-
 # --- DB Connection ---
-# DB_PATH = 'G:\\Yuval_Dahan\\Latency\\Latency_Results\\latency_results.db'  
 DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
 engine = create_engine(f'sqlite:///{DB_PATH}')
 
-
 @st.cache_data
-
 def load_data():
     df = pd.read_sql('SELECT * FROM test_results', engine)
 
-    # Format datetime to show only 2 digits in seconds
+    # Format datetime
     if 'datetime' in df.columns:
         df['datetime'] = pd.to_datetime(df['datetime']).dt.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Drop step column if exists
-    if 'step' in df.columns:
-        df = df.drop(columns=['step'])
 
-    # Drop id column if exists
-    if 'id' in df.columns:
-        df = df.drop(columns=['id'])
+    # Drop unused columns
+    df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
 
     return df
 
@@ -73,6 +44,32 @@ with st.sidebar:
     selected_uplink_fec = st.multiselect("Uplink FEC Mode", df['uplink_fec_mode'].dropna().unique())
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
+
+    st.markdown("---")
+    st.subheader("🧩 Columns to Display")
+    display_columns = df.rename(columns={
+        'product_name': 'Product Name',
+        'datetime': 'Date & Time',
+        'serial_number': 'Serial Number',
+        'part_number': 'Part Number',
+        'hardware_version': 'Hardware Version',
+        'firmware_version': 'Firmware Version',
+        'traffic_generator_application': 'Traffic Generator Application',
+        'system_mode': 'System Mode',
+        'client_service_type': 'Client Service Type',
+        'client_fec_mode': 'Client FEC Mode',
+        'uplink_service_type': 'Uplink Service Type',
+        'uplink_fec_mode': 'Uplink FEC Mode',
+        'modulation_format': 'Modulation Format',
+        'frame_size': 'Frame Size',
+        'result': 'Latency (uSecs)'
+    })
+
+    selected_columns = st.multiselect(
+        "Select columns to show in the results table",
+        options=display_columns.columns.tolist(),
+        default=display_columns.columns.tolist()
+    )
 
 # --- Filter DataFrame ---
 filtered_df = df.copy()
@@ -119,8 +116,8 @@ display_df = filtered_df.rename(columns={
 
 # --- Display Results ---
 st.subheader(f"Showing {len(filtered_df)} Records")
-st.dataframe(display_df, use_container_width=True)
+st.dataframe(display_df[selected_columns], use_container_width=True)
 
 # --- Optional Download ---
-csv = filtered_df.to_csv(index=False)
+csv = display_df[selected_columns].to_csv(index=False)
 st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
