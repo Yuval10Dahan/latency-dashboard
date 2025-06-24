@@ -4,25 +4,10 @@ st.set_page_config(page_title="Latency Test Results", layout="wide")
 import os
 import pandas as pd
 from sqlalchemy import create_engine
-import streamlit.components.v1 as components
+# import streamlit.components.v1 as components
 
 
 
-# Inject JavaScript to automatically click the sidebar expander button
-components.html(
-    """
-    <script>
-    window.onload = function() {
-        const expandButton = window.parent.document.querySelector('[data-testid="stSidebarCollapseControl"]');
-        if (expandButton && expandButton.innerText.includes("keyboard_double_arrow_right")) {
-            expandButton.click();
-        }
-    }
-    </script>
-    """,
-    height=0,
-    width=0
-)
 
 
 
