@@ -8,17 +8,17 @@ import streamlit.components.v1 as components
 
 
 
-# Inject JavaScript to auto-expand the sidebar on page load
-components.html("""
-    <script>
-        window.addEventListener('load', function () {
-            const sidebarButton = window.parent.document.querySelector('section[data-testid="stSidebar"] button[title="Expand sidebar"]');
-            if (sidebarButton) {
-                sidebarButton.click();
-            }
-        });
-    </script>
-""", height=0)
+# # Inject JavaScript to auto-expand the sidebar on page load
+# components.html("""
+#     <script>
+#         window.addEventListener('load', function () {
+#             const sidebarButton = window.parent.document.querySelector('section[data-testid="stSidebar"] button[title="Expand sidebar"]');
+#             if (sidebarButton) {
+#                 sidebarButton.click();
+#             }
+#         });
+#     </script>
+# """, height=0)
 
 
 # --- DB Connection ---
