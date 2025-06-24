@@ -29,6 +29,10 @@ def load_data():
     if 'step' in df.columns:
         df = df.drop(columns=['step'])
 
+    # Drop id column if exists
+    if 'id' in df.columns:
+        df = df.drop(columns=['id'])
+
     return df
 
 df = load_data()
