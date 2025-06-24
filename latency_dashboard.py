@@ -5,6 +5,8 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine
 import streamlit.components.v1 as components
+from PIL import Image
+
 
 
 # # Inject JavaScript to automatically click the sidebar expander button
@@ -30,7 +32,9 @@ import streamlit.components.v1 as components
 DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
 engine = create_engine(f'sqlite:///{DB_PATH}')
 
+
 @st.cache_data
+
 def load_data():
     df = pd.read_sql('SELECT * FROM test_results', engine)
 
@@ -50,7 +54,9 @@ def load_data():
 
 df = load_data()
 
-
+# --- Display logo above title ---
+logo_path = os.path.join(os.path.dirname(__file__), 'Packetlight Logo.png')
+st.image(Image.open(logo_path), width=250)
 st.title("PacketLight - Latency Results")
 
 # --- Sidebar Filters ---
