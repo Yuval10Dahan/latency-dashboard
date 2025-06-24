@@ -123,4 +123,4 @@ st.dataframe(display_df, use_container_width=True)
 
 # --- Optional Download ---
 csv = filtered_df.to_csv(index=False)
-st.download_button("Download Filtered Results as an Excel File", csv, "latency_results.csv", "text/csv")
+st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
