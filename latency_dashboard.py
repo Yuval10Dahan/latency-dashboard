@@ -32,7 +32,8 @@ st.title("PacketLight - Latency Results")
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.subheader("Contact: Yuval_Dahan@packetlight.com")
+    st.subheader("Contact:")
+    st.subheader("Yuval_Dahan@packetlight.com")
     st.subheader("🧩 Columns to Display")
     display_columns = df.rename(columns={
         'product_name': 'Product Name',
