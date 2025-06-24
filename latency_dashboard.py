@@ -32,19 +32,7 @@ st.title("PacketLight - Latency Results")
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.header("🔍 Filters")
-
-    selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
-    selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
-    selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
-    selected_mode = st.multiselect("System Mode", df['system_mode'].dropna().unique())
-    selected_client = st.multiselect("Client Service Type", df['client_service_type'].dropna().unique())
-    selected_client_fec = st.multiselect("Client FEC Mode", df['client_fec_mode'].dropna().unique())
-    selected_uplink = st.multiselect("Uplink Service Type", df['uplink_service_type'].dropna().unique())
-    selected_uplink_fec = st.multiselect("Uplink FEC Mode", df['uplink_fec_mode'].dropna().unique())
-    selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
-    selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
-
+    
     st.markdown("---")
     st.subheader("🧩 Columns to Display")
     display_columns = df.rename(columns={
@@ -70,6 +58,19 @@ with st.sidebar:
         options=display_columns.columns.tolist(),
         default=display_columns.columns.tolist()
     )
+
+    st.header("🔍 Filters")
+
+    selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
+    selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
+    selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
+    selected_mode = st.multiselect("System Mode", df['system_mode'].dropna().unique())
+    selected_client = st.multiselect("Client Service Type", df['client_service_type'].dropna().unique())
+    selected_client_fec = st.multiselect("Client FEC Mode", df['client_fec_mode'].dropna().unique())
+    selected_uplink = st.multiselect("Uplink Service Type", df['uplink_service_type'].dropna().unique())
+    selected_uplink_fec = st.multiselect("Uplink FEC Mode", df['uplink_fec_mode'].dropna().unique())
+    selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
+    selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
 
 # --- Filter DataFrame ---
 filtered_df = df.copy()
