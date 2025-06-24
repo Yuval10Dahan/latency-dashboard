@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 import streamlit.components.v1 as components
 
 
+
 # Inject JavaScript to automatically click the sidebar expander button
 components.html(
     """
@@ -22,6 +23,7 @@ components.html(
     height=0,
     width=0
 )
+
 
 
 
@@ -41,10 +43,6 @@ def load_data():
     # Drop step column if exists
     if 'step' in df.columns:
         df = df.drop(columns=['step'])
-
-    # Drop id column if exists
-    if 'id' in df.columns:
-        df = df.drop(columns=['id'])
 
     return df
 
