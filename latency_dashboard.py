@@ -32,7 +32,7 @@ st.title("PacketLight - Latency Results")
 
 # --- Sidebar Filters ---
 with st.sidebar:
-    st.markdown("Contact: Yuval_Dahan@packetlight.com")
+    st.subheader("Contact: Yuval_Dahan@packetlight.com")
     st.subheader("🧩 Columns to Display")
     display_columns = df.rename(columns={
         'product_name': 'Product Name',
@@ -53,7 +53,7 @@ with st.sidebar:
     })
 
     selected_columns = st.multiselect(
-        "Select the columns to display in the table",
+        "Select the columns to display in the table:",
         options=display_columns.columns.tolist(),
         default=display_columns.columns.tolist()
     )
