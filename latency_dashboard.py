@@ -1,10 +1,10 @@
 import streamlit as st
-st.set_page_config(page_title="Latency Test Results", layout="wide")
-
 import os
 import pandas as pd
 from sqlalchemy import create_engine
 from PIL import Image
+
+st.set_page_config(page_title="Latency Test Results", layout="wide")
 
 # --- DB Connection ---
 DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
@@ -13,19 +13,17 @@ engine = create_engine(f'sqlite:///{DB_PATH}')
 @st.cache_data
 def load_data():
     df = pd.read_sql('SELECT * FROM test_results', engine)
-
-    # Format datetime
     if 'datetime' in df.columns:
         df['datetime'] = pd.to_datetime(df['datetime']).dt.strftime('%Y-%m-%d %H:%M:%S')
-
-    # Drop unused columns
-    df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
-
+    if 'step' in df.columns:
+        df = df.drop(columns=['step'])
+    if 'id' in df.columns:
+        df = df.drop(columns=['id'])
     return df
 
 df = load_data()
 
-# --- Display logo above title ---
+# --- Display logo and title ---
 logo_path = os.path.join(os.path.dirname(__file__), 'Packetlight Logo.png')
 st.image(Image.open(logo_path), width=250)
 st.title("PacketLight - Latency Results")
@@ -33,7 +31,6 @@ st.title("PacketLight - Latency Results")
 # --- Sidebar Filters ---
 with st.sidebar:
     st.header("🔍 Filters")
-
     selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
     selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
     selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
@@ -45,35 +42,8 @@ with st.sidebar:
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
 
-    st.markdown("---")
-    st.subheader("🧩 Columns to Display")
-    display_columns = df.rename(columns={
-        'product_name': 'Product Name',
-        'datetime': 'Date & Time',
-        'serial_number': 'Serial Number',
-        'part_number': 'Part Number',
-        'hardware_version': 'Hardware Version',
-        'firmware_version': 'Firmware Version',
-        'traffic_generator_application': 'Traffic Generator Application',
-        'system_mode': 'System Mode',
-        'client_service_type': 'Client Service Type',
-        'client_fec_mode': 'Client FEC Mode',
-        'uplink_service_type': 'Uplink Service Type',
-        'uplink_fec_mode': 'Uplink FEC Mode',
-        'modulation_format': 'Modulation Format',
-        'frame_size': 'Frame Size',
-        'result': 'Latency (uSecs)'
-    })
-
-    selected_columns = st.multiselect(
-        "Select columns to show in the results table",
-        options=display_columns.columns.tolist(),
-        default=display_columns.columns.tolist()
-    )
-
 # --- Filter DataFrame ---
 filtered_df = df.copy()
-
 if selected_product:
     filtered_df = filtered_df[filtered_df['product_name'].isin(selected_product)]
 if selected_hw:
@@ -114,10 +84,24 @@ display_df = filtered_df.rename(columns={
     'result': 'Latency (uSecs)'
 })
 
-# --- Display Results ---
-st.subheader(f"Showing {len(filtered_df)} Records")
-st.dataframe(display_df[selected_columns], use_container_width=True)
+# --- Default selected columns ---
+all_columns = display_df.columns.tolist()
+if "selected_columns" not in st.session_state:
+    st.session_state.selected_columns = all_columns
+
+# --- Display Results Table ---
+st.subheader(f"Showing {len(display_df)} Records")
+st.dataframe(display_df[st.session_state.selected_columns], use_container_width=True)
+
+# --- Columns to Display Selector (Below the table) ---
+st.markdown("---")
+st.subheader("🧩 Columns to Display")
+st.session_state.selected_columns = st.multiselect(
+    "Select columns to show in the results table",
+    options=all_columns,
+    default=st.session_state.selected_columns
+)
 
 # --- Optional Download ---
-csv = display_df[selected_columns].to_csv(index=False)
+csv = display_df[st.session_state.selected_columns].to_csv(index=False)
 st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
