@@ -7,21 +7,21 @@ from sqlalchemy import create_engine
 import streamlit.components.v1 as components
 
 
-# Inject JavaScript to automatically click the sidebar expander button
-components.html(
-    """
-    <script>
-    window.onload = function() {
-        const expandButton = window.parent.document.querySelector('[data-testid="stSidebarCollapseControl"]');
-        if (expandButton && expandButton.innerText.includes("keyboard_double_arrow_right")) {
-            expandButton.click();
-        }
-    }
-    </script>
-    """,
-    height=0,
-    width=0
-)
+# # Inject JavaScript to automatically click the sidebar expander button
+# components.html(
+#     """
+#     <script>
+#     window.onload = function() {
+#         const expandButton = window.parent.document.querySelector('[data-testid="stSidebarCollapseControl"]');
+#         if (expandButton && expandButton.innerText.includes("keyboard_double_arrow_right")) {
+#             expandButton.click();
+#         }
+#     }
+#     </script>
+#     """,
+#     height=0,
+#     width=0
+# )
 
 
 
@@ -51,7 +51,7 @@ def load_data():
 df = load_data()
 
 
-st.title("Latency Test Results Viewer")
+st.title("PacketLight - Latency Results")
 
 # --- Sidebar Filters ---
 with st.sidebar:
