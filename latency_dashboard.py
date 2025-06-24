@@ -33,7 +33,7 @@ st.title("PacketLight - Latency Results")
 # --- Sidebar Filters ---
 with st.sidebar:
     
-    st.markdown("---")
+    # st.markdown("---")
     st.subheader("🧩 Columns to Display")
     display_columns = df.rename(columns={
         'product_name': 'Product Name',
