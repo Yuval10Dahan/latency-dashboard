@@ -48,11 +48,19 @@ display_columns_map = {
     'result': 'Latency (uSecs)'
 }
 
-# --- Sidebar Filters ---
+# --- Sidebar Filters and Column Toggles ---
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
-    st.header("🔍 Filters")
 
+    st.header("🧩 Columns to Display")
+    st.caption("Toggle columns on/off to display in the table:")
+
+    checkbox_columns = {}
+    for col in df.rename(columns=display_columns_map).columns:
+        checkbox_columns[col] = st.checkbox(col, value=True)
+    selected_columns = [col for col, show in checkbox_columns.items() if show]
+
+    st.header("🔍 Filters")
     selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
     selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
     selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
@@ -64,7 +72,7 @@ with st.sidebar:
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
 
-# --- Filter DataFrame ---
+# --- Apply filters ---
 filtered_df = df.copy()
 if selected_product:
     filtered_df = filtered_df[filtered_df['product_name'].isin(selected_product)]
@@ -87,20 +95,8 @@ if selected_modulation:
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
 
-
+# --- Rename columns for display ---
 display_df = filtered_df.rename(columns=display_columns_map)
-
-# --- Column Toggles ---
-st.subheader("🧩 Columns to Display")
-st.caption("Toggle columns on/off to display in the table:")
-
-checkbox_columns = {}
-cols = st.columns(3)  # Optional: Split into 3 columns horizontally
-for i, col in enumerate(display_df.columns):
-    with cols[i % 3]:
-        checkbox_columns[col] = st.checkbox(col, value=True)
-
-selected_columns = [col for col, show in checkbox_columns.items() if show]
 
 # --- Display Results ---
 st.subheader(f"Showing {len(display_df)} Records")
