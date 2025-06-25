@@ -52,13 +52,13 @@ display_columns_map = {
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
 
-    st.header("🧩 Columns to Display")
-    st.caption("Toggle columns on/off to display in the table:")
+    # st.header("🧩 Columns to Display")
+    # st.caption("Toggle columns on/off to display in the table:")
 
-    checkbox_columns = {}
-    for col in df.rename(columns=display_columns_map).columns:
-        checkbox_columns[col] = st.checkbox(col, value=True)
-    selected_columns = [col for col, show in checkbox_columns.items() if show]
+    # checkbox_columns = {}
+    # for col in df.rename(columns=display_columns_map).columns:
+    #     checkbox_columns[col] = st.checkbox(col, value=True)
+    # selected_columns = [col for col, show in checkbox_columns.items() if show]
 
     st.header("🔍 Filters")
     selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
@@ -71,6 +71,14 @@ with st.sidebar:
     selected_uplink_fec = st.multiselect("Uplink FEC Mode", df['uplink_fec_mode'].dropna().unique())
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
+
+    st.header("🧩 Columns to Display")
+    st.caption("Toggle columns on/off to display in the table:")
+
+    checkbox_columns = {}
+    for col in df.rename(columns=display_columns_map).columns:
+        checkbox_columns[col] = st.checkbox(col, value=True)
+    selected_columns = [col for col, show in checkbox_columns.items() if show]
 
 # --- Apply filters ---
 filtered_df = df.copy()
