@@ -20,7 +20,6 @@ def load_data():
 
     # Drop unused columns
     df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
-
     return df
 
 df = load_data()
@@ -30,34 +29,28 @@ logo_path = os.path.join(os.path.dirname(__file__), 'Packetlight Logo.png')
 st.image(Image.open(logo_path), width=250)
 st.title("PacketLight - Latency Results")
 
+# --- Define renamed display columns ---
+display_columns_map = {
+    'product_name': 'Product Name',
+    'datetime': 'Date & Time',
+    'serial_number': 'Serial Number',
+    'part_number': 'Part Number',
+    'hardware_version': 'Hardware Version',
+    'firmware_version': 'Firmware Version',
+    'traffic_generator_application': 'Traffic Generator Application',
+    'system_mode': 'System Mode',
+    'client_service_type': 'Client Service Type',
+    'client_fec_mode': 'Client FEC Mode',
+    'uplink_service_type': 'Uplink Service Type',
+    'uplink_fec_mode': 'Uplink FEC Mode',
+    'modulation_format': 'Modulation Format',
+    'frame_size': 'Frame Size',
+    'result': 'Latency (uSecs)'
+}
+
 # --- Sidebar Filters ---
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
-    st.subheader("🧩 Columns to Display")
-    display_columns = df.rename(columns={
-        'product_name': 'Product Name',
-        'datetime': 'Date & Time',
-        'serial_number': 'Serial Number',
-        'part_number': 'Part Number',
-        'hardware_version': 'Hardware Version',
-        'firmware_version': 'Firmware Version',
-        'traffic_generator_application': 'Traffic Generator Application',
-        'system_mode': 'System Mode',
-        'client_service_type': 'Client Service Type',
-        'client_fec_mode': 'Client FEC Mode',
-        'uplink_service_type': 'Uplink Service Type',
-        'uplink_fec_mode': 'Uplink FEC Mode',
-        'modulation_format': 'Modulation Format',
-        'frame_size': 'Frame Size',
-        'result': 'Latency (uSecs)'
-    })
-
-    selected_columns = st.multiselect(
-        "Select the columns to display in the table:",
-        options=display_columns.columns.tolist(),
-        default=display_columns.columns.tolist()
-    )
-
     st.header("🔍 Filters")
 
     selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
@@ -73,7 +66,6 @@ with st.sidebar:
 
 # --- Filter DataFrame ---
 filtered_df = df.copy()
-
 if selected_product:
     filtered_df = filtered_df[filtered_df['product_name'].isin(selected_product)]
 if selected_hw:
@@ -95,27 +87,23 @@ if selected_modulation:
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
 
-# --- Rename Columns for Display ---
-display_df = filtered_df.rename(columns={
-    'product_name': 'Product Name',
-    'datetime': 'Date & Time',
-    'serial_number': 'Serial Number',
-    'part_number': 'Part Number',
-    'hardware_version': 'Hardware Version',
-    'firmware_version': 'Firmware Version',
-    'traffic_generator_application': 'Traffic Generator Application',
-    'system_mode': 'System Mode',
-    'client_service_type': 'Client Service Type',
-    'client_fec_mode': 'Client FEC Mode',
-    'uplink_service_type': 'Uplink Service Type',
-    'uplink_fec_mode': 'Uplink FEC Mode',
-    'modulation_format': 'Modulation Format',
-    'frame_size': 'Frame Size',
-    'result': 'Latency (uSecs)'
-})
+# --- Rename columns for display ---
+display_df = filtered_df.rename(columns=display_columns_map)
+
+# --- Column Toggles ---
+st.subheader("🧩 Columns to Display")
+st.caption("Toggle columns on/off to display in the table:")
+
+checkbox_columns = {}
+cols = st.columns(3)  # Optional: Split into 3 columns horizontally
+for i, col in enumerate(display_df.columns):
+    with cols[i % 3]:
+        checkbox_columns[col] = st.checkbox(col, value=True)
+
+selected_columns = [col for col, show in checkbox_columns.items() if show]
 
 # --- Display Results ---
-st.subheader(f"Showing {len(filtered_df)} Records")
+st.subheader(f"Showing {len(display_df)} Records")
 st.dataframe(display_df[selected_columns], use_container_width=True)
 
 # --- Optional Download ---
