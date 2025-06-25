@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="Latency Test Results", layout="wide")
+st.set_page_config(page_title="Latency Test Results", layout="wide", initial_sidebar_state="expanded")
 
 import os
 import pandas as pd
