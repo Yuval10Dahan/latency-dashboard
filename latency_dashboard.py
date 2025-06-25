@@ -95,9 +95,9 @@ st.subheader("🧩 Columns to Display")
 st.caption("Toggle columns on/off to display in the table:")
 
 checkbox_columns = {}
-cols = st.columns(5)  # Optional: Split into 3 columns horizontally
+cols = st.columns(3)  # Optional: Split into 3 columns horizontally
 for i, col in enumerate(display_df.columns):
-    with cols[i % 5]:
+    with cols[i % 3]:
         checkbox_columns[col] = st.checkbox(col, value=True)
 
 selected_columns = [col for col, show in checkbox_columns.items() if show]
