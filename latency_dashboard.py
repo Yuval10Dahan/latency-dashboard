@@ -87,7 +87,7 @@ if selected_modulation:
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
 
-# --- Rename columns for display ---
+
 display_df = filtered_df.rename(columns=display_columns_map)
 
 # --- Column Toggles ---
@@ -95,9 +95,9 @@ st.subheader("🧩 Columns to Display")
 st.caption("Toggle columns on/off to display in the table:")
 
 checkbox_columns = {}
-cols = st.columns(3)  # Optional: Split into 3 columns horizontally
+cols = st.columns(4)  # Optional: Split into 3 columns horizontally
 for i, col in enumerate(display_df.columns):
-    with cols[i % 3]:
+    with cols[i % 4]:
         checkbox_columns[col] = st.checkbox(col, value=True)
 
 selected_columns = [col for col, show in checkbox_columns.items() if show]
