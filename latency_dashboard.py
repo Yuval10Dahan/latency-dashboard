@@ -18,6 +18,10 @@ def load_data():
     if 'datetime' in df.columns:
         df['datetime'] = pd.to_datetime(df['datetime']).dt.strftime('%Y-%m-%d %H:%M:%S')
 
+    # Convert result to numeric
+    if 'result' in df.columns:
+        df['result'] = pd.to_numeric(df['result'], errors='coerce')
+
     # Drop unused columns
     df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
     return df
@@ -72,6 +76,10 @@ with st.sidebar:
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
 
+    st.header("⏱️ Latency Filter (μSec)")
+    latency_filter_type = st.radio("Filter by Latency:", ["Show All", "Above", "Below"], horizontal=True)
+    latency_threshold = st.number_input("Latency Threshold (μSec)", min_value=0.0, step=0.1)
+
     st.header("🧩 Columns to Display")
     st.caption("Toggle columns on/off to display in the table:")
 
@@ -102,6 +110,12 @@ if selected_modulation:
     filtered_df = filtered_df[filtered_df['modulation_format'].isin(selected_modulation)]
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
+
+if latency_filter_type == "Above":
+    filtered_df = filtered_df[filtered_df['result'] > latency_threshold]
+elif latency_filter_type == "Below":
+    filtered_df = filtered_df[filtered_df['result'] < latency_threshold]
+
 
 # --- Rename columns for display ---
 display_df = filtered_df.rename(columns=display_columns_map)
