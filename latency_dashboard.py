@@ -23,7 +23,8 @@ def load_data():
         df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
     # Drop unused columns
-    df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
+    # df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
+    df = df.drop(columns=[col for col in ['step'] if col in df.columns])
     return df
 
 df = load_data()
@@ -35,6 +36,7 @@ st.title("PacketLight - Latency Results")
 
 # --- Define renamed display columns ---
 display_columns_map = {
+    'id': 'ID',
     'product_name': 'Product Name',
     'datetime': 'Date & Time',
     'serial_number': 'Serial Number',
@@ -76,6 +78,15 @@ with st.sidebar:
     selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
     selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
 
+    st.header("🆔 Filter by ID")
+    id_input = st.text_input("Enter IDs (comma-separated)", value="")
+    id_list = []
+    if id_input.strip():
+        try:
+            id_list = [int(x.strip()) for x in id_input.split(",") if x.strip().isdigit()]
+        except ValueError:
+            st.warning("Please enter only integers separated by commas.")
+
     st.header("⏱️ Latency Filter (μSec)")
     latency_filter_type = st.radio("Filter by Latency:", ["Show All", "Above", "Below"], horizontal=True)
     latency_threshold = st.number_input("Latency Threshold (μSec)", min_value=0.0, step=0.1)
@@ -110,6 +121,9 @@ if selected_modulation:
     filtered_df = filtered_df[filtered_df['modulation_format'].isin(selected_modulation)]
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
+
+if id_list:
+    filtered_df = filtered_df[filtered_df['id'].isin(id_list)]
 
 if latency_filter_type == "Above":
     filtered_df = filtered_df[filtered_df['result'] > latency_threshold]
