@@ -70,6 +70,7 @@ with st.sidebar:
     selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
     selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
     selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
+    selected_traffic_app = st.multiselect("Traffic Generator Application", df['traffic_generator_application'].dropna().unique())
     selected_mode = st.multiselect("System Mode", df['system_mode'].dropna().unique())
     selected_client = st.multiselect("Client Service Type", df['client_service_type'].dropna().unique())
     selected_client_fec = st.multiselect("Client FEC Mode", df['client_fec_mode'].dropna().unique())
@@ -107,6 +108,8 @@ if selected_hw:
     filtered_df = filtered_df[filtered_df['hardware_version'].isin(selected_hw)]
 if selected_fw:
     filtered_df = filtered_df[filtered_df['firmware_version'].isin(selected_fw)]
+if selected_traffic_app:
+    filtered_df = filtered_df[filtered_df['traffic_generator_application'].isin(selected_traffic_app)]
 if selected_mode:
     filtered_df = filtered_df[filtered_df['system_mode'].isin(selected_mode)]
 if selected_client:
