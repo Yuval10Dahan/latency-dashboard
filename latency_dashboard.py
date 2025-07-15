@@ -57,27 +57,55 @@ display_columns_map = {
 # --- Sidebar Filters and Column Toggles ---
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
-
-    # st.header("🧩 Columns to Display")
-    # st.caption("Toggle columns on/off to display in the table:")
-
-    # checkbox_columns = {}
-    # for col in df.rename(columns=display_columns_map).columns:
-    #     checkbox_columns[col] = st.checkbox(col, value=True)
-    # selected_columns = [col for col, show in checkbox_columns.items() if show]
-
     st.header("🔍 Filters")
-    selected_product = st.multiselect("Product Name", df['product_name'].dropna().unique())
-    selected_hw = st.multiselect("Hardware Version", df['hardware_version'].dropna().unique())
-    selected_fw = st.multiselect("Firmware Version", df['firmware_version'].dropna().unique())
-    selected_traffic_app = st.multiselect("Traffic Generator Application", df['traffic_generator_application'].dropna().unique())
-    selected_mode = st.multiselect("System Mode", df['system_mode'].dropna().unique())
-    selected_client = st.multiselect("Client Service Type", df['client_service_type'].dropna().unique())
-    selected_client_fec = st.multiselect("Client FEC Mode", df['client_fec_mode'].dropna().unique())
-    selected_uplink = st.multiselect("Uplink Service Type", df['uplink_service_type'].dropna().unique())
-    selected_uplink_fec = st.multiselect("Uplink FEC Mode", df['uplink_fec_mode'].dropna().unique())
-    selected_modulation = st.multiselect("Modulation Format", df['modulation_format'].dropna().unique())
-    selected_frame_size = st.multiselect("Frame Size", sorted(df['frame_size'].dropna().unique()))
+
+    # Start with full df
+    filtered_options_df = df.copy()
+
+    # Collect user selections (initially unfiltered)
+    selected_product = st.multiselect("Product Name", sorted(df['product_name'].dropna().unique()))
+    if selected_product:
+        filtered_options_df = filtered_options_df[filtered_options_df['product_name'].isin(selected_product)]
+
+    selected_hw = st.multiselect("Hardware Version", sorted(filtered_options_df['hardware_version'].dropna().unique()))
+    if selected_hw:
+        filtered_options_df = filtered_options_df[filtered_options_df['hardware_version'].isin(selected_hw)]
+
+    selected_fw = st.multiselect("Firmware Version", sorted(filtered_options_df['firmware_version'].dropna().unique()))
+    if selected_fw:
+        filtered_options_df = filtered_options_df[filtered_options_df['firmware_version'].isin(selected_fw)]
+
+    selected_traffic_app = st.multiselect("Traffic Generator Application", sorted(filtered_options_df['traffic_generator_application'].dropna().unique()))
+    if selected_traffic_app:
+        filtered_options_df = filtered_options_df[filtered_options_df['traffic_generator_application'].isin(selected_traffic_app)]
+
+    selected_mode = st.multiselect("System Mode", sorted(filtered_options_df['system_mode'].dropna().unique()))
+    if selected_mode:
+        filtered_options_df = filtered_options_df[filtered_options_df['system_mode'].isin(selected_mode)]
+
+    selected_client = st.multiselect("Client Service Type", sorted(filtered_options_df['client_service_type'].dropna().unique()))
+    if selected_client:
+        filtered_options_df = filtered_options_df[filtered_options_df['client_service_type'].isin(selected_client)]
+
+    selected_client_fec = st.multiselect("Client FEC Mode", sorted(filtered_options_df['client_fec_mode'].dropna().unique()))
+    if selected_client_fec:
+        filtered_options_df = filtered_options_df[filtered_options_df['client_fec_mode'].isin(selected_client_fec)]
+
+    selected_uplink = st.multiselect("Uplink Service Type", sorted(filtered_options_df['uplink_service_type'].dropna().unique()))
+    if selected_uplink:
+        filtered_options_df = filtered_options_df[filtered_options_df['uplink_service_type'].isin(selected_uplink)]
+
+    selected_uplink_fec = st.multiselect("Uplink FEC Mode", sorted(filtered_options_df['uplink_fec_mode'].dropna().unique()))
+    if selected_uplink_fec:
+        filtered_options_df = filtered_options_df[filtered_options_df['uplink_fec_mode'].isin(selected_uplink_fec)]
+
+    selected_modulation = st.multiselect("Modulation Format", sorted(filtered_options_df['modulation_format'].dropna().unique()))
+    if selected_modulation:
+        filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
+
+    selected_frame_size = st.multiselect("Frame Size", sorted(filtered_options_df['frame_size'].dropna().unique()))
+    if selected_frame_size:
+        filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
 
     st.header("🆔 Filter by ID")
     id_input = st.text_input("Enter IDs (comma-separated)", value="")
