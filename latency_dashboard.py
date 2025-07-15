@@ -1,10 +1,10 @@
 import streamlit as st
-st.set_page_config(page_title="Latency Test Results", layout="wide", initial_sidebar_state="expanded")
-
 import os
 import pandas as pd
 from sqlalchemy import create_engine
 from PIL import Image
+
+st.set_page_config(page_title="Latency Test Results", layout="wide", initial_sidebar_state="expanded")
 
 # --- DB Connection ---
 DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
@@ -23,7 +23,6 @@ def load_data():
         df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
     # Drop unused columns
-    # df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
     df = df.drop(columns=[col for col in ['step'] if col in df.columns])
     return df
 
@@ -31,7 +30,8 @@ df = load_data()
 
 # --- Display logo above title ---
 logo_path = os.path.join(os.path.dirname(__file__), 'Packetlight Logo.png')
-st.image(Image.open(logo_path), width=250)
+if os.path.exists(logo_path):
+    st.image(Image.open(logo_path), width=250)
 st.title("PacketLight - Latency Results")
 
 # --- Define renamed display columns ---
@@ -114,7 +114,7 @@ with st.sidebar:
         checkbox_columns[col] = st.checkbox(col, value=True)
     selected_columns = [col for col, show in checkbox_columns.items() if show]
 
-# --- Apply filters ---
+# --- Apply Filters ---
 filtered_df = df.copy()
 for key, values in all_filters.items():
     if values:
@@ -128,11 +128,8 @@ if latency_filter_type == "Above":
 elif latency_filter_type == "Below":
     filtered_df = filtered_df[filtered_df['result'] < latency_threshold]
 
-
-# --- Rename columns for display ---
-display_df = filtered_df.rename(columns=display_columns_map)
-
 # --- Display Results ---
+display_df = filtered_df.rename(columns=display_columns_map)
 st.subheader(f"Showing {len(display_df)} Records")
 st.dataframe(display_df[selected_columns], use_container_width=True)
 
