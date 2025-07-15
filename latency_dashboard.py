@@ -62,38 +62,36 @@ with st.sidebar:
 
     st.header("🔍 Filters")
 
-    # Start with full df
-    selection_df = df.copy()
+    # --- Define all columns you want to allow filtering on ---
+    filter_columns = [
+        'product_name', 'hardware_version', 'firmware_version',
+        'traffic_generator_application', 'system_mode',
+        'client_service_type', 'client_fec_mode',
+        'uplink_service_type', 'uplink_fec_mode',
+        'modulation_format', 'frame_size'
+    ]
 
-    # Create all filter options from the original dataset
-    all_options = {
-        'product_name': sorted(df['product_name'].dropna().unique()),
-        'hardware_version': sorted(df['hardware_version'].dropna().unique()),
-        'firmware_version': sorted(df['firmware_version'].dropna().unique()),
-        'traffic_generator_application': sorted(df['traffic_generator_application'].dropna().unique()),
-        'system_mode': sorted(df['system_mode'].dropna().unique()),
-        'client_service_type': sorted(df['client_service_type'].dropna().unique()),
-        'client_fec_mode': sorted(df['client_fec_mode'].dropna().unique()),
-        'uplink_service_type': sorted(df['uplink_service_type'].dropna().unique()),
-        'uplink_fec_mode': sorted(df['uplink_fec_mode'].dropna().unique()),
-        'modulation_format': sorted(df['modulation_format'].dropna().unique()),
-        'frame_size': sorted(df['frame_size'].dropna().unique()),
-    }
-
-    # Collect current selections
+    # --- Build selections from user input ---
     selections = {}
-    for col in all_options:
-        selections[col] = st.multiselect(display_columns_map.get(col, col.replace('_', ' ').title()), all_options[col])
+    for col in filter_columns:
+        label = display_columns_map.get(col, col.replace('_', ' ').title())
+        selections[col] = st.multiselect(label, sorted(df[col].dropna().unique()))
 
-    # Apply filters all at once
-    for key, selected_vals in selections.items():
+    # --- Apply all filters at once ---
+    filtered_df = df.copy()
+    for col, selected_vals in selections.items():
         if selected_vals:
-            selection_df = selection_df[selection_df[key].isin(selected_vals)]
+            filtered_df = filtered_df[filtered_df[col].isin(selected_vals)]
 
-    # Now update the dropdown options based on intersection
-    for col in all_options:
-        if not selections[col]:  # only update if not already selected
-            all_options[col] = sorted(selection_df[col].dropna().unique())
+    # --- Rebuild available options based on filtered_df ---
+    for col in filter_columns:
+        label = display_columns_map.get(col, col.replace('_', ' ').title())
+        if not selections[col]:
+            st.multiselect(
+                label,
+                sorted(filtered_df[col].dropna().unique()),
+                key=col
+            )
 
     # -------------------------------------------------------------------------------------------------- #
 
@@ -105,6 +103,8 @@ with st.sidebar:
             id_list = [int(x.strip()) for x in id_input.split(",") if x.strip().isdigit()]
         except ValueError:
             st.warning("Please enter only integers separated by commas.")
+
+    # -------------------------------------------------------------------------------------------------- #
 
     st.header("⏱️ Latency Filter (μSec)")
     latency_filter_type = st.radio("Filter by Latency:", ["Show All", "Above", "Below"], horizontal=True)
