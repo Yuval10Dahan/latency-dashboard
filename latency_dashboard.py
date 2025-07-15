@@ -57,55 +57,45 @@ display_columns_map = {
 # --- Sidebar Filters and Column Toggles ---
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
+
+    # -------------------------------------------------------------------------------------------------- #
+
     st.header("🔍 Filters")
 
     # Start with full df
-    filtered_options_df = df.copy()
+    selection_df = df.copy()
 
-    # Collect user selections (initially unfiltered)
-    selected_product = st.multiselect("Product Name", sorted(df['product_name'].dropna().unique()))
-    if selected_product:
-        filtered_options_df = filtered_options_df[filtered_options_df['product_name'].isin(selected_product)]
+    # Create all filter options from the original dataset
+    all_options = {
+        'product_name': sorted(df['product_name'].dropna().unique()),
+        'hardware_version': sorted(df['hardware_version'].dropna().unique()),
+        'firmware_version': sorted(df['firmware_version'].dropna().unique()),
+        'traffic_generator_application': sorted(df['traffic_generator_application'].dropna().unique()),
+        'system_mode': sorted(df['system_mode'].dropna().unique()),
+        'client_service_type': sorted(df['client_service_type'].dropna().unique()),
+        'client_fec_mode': sorted(df['client_fec_mode'].dropna().unique()),
+        'uplink_service_type': sorted(df['uplink_service_type'].dropna().unique()),
+        'uplink_fec_mode': sorted(df['uplink_fec_mode'].dropna().unique()),
+        'modulation_format': sorted(df['modulation_format'].dropna().unique()),
+        'frame_size': sorted(df['frame_size'].dropna().unique()),
+    }
 
-    selected_hw = st.multiselect("Hardware Version", sorted(filtered_options_df['hardware_version'].dropna().unique()))
-    if selected_hw:
-        filtered_options_df = filtered_options_df[filtered_options_df['hardware_version'].isin(selected_hw)]
+    # Collect current selections
+    selections = {}
+    for col in all_options:
+        selections[col] = st.multiselect(display_columns_map.get(col, col.replace('_', ' ').title()), all_options[col])
 
-    selected_fw = st.multiselect("Firmware Version", sorted(filtered_options_df['firmware_version'].dropna().unique()))
-    if selected_fw:
-        filtered_options_df = filtered_options_df[filtered_options_df['firmware_version'].isin(selected_fw)]
+    # Apply filters all at once
+    for key, selected_vals in selections.items():
+        if selected_vals:
+            selection_df = selection_df[selection_df[key].isin(selected_vals)]
 
-    selected_traffic_app = st.multiselect("Traffic Generator Application", sorted(filtered_options_df['traffic_generator_application'].dropna().unique()))
-    if selected_traffic_app:
-        filtered_options_df = filtered_options_df[filtered_options_df['traffic_generator_application'].isin(selected_traffic_app)]
+    # Now update the dropdown options based on intersection
+    for col in all_options:
+        if not selections[col]:  # only update if not already selected
+            all_options[col] = sorted(selection_df[col].dropna().unique())
 
-    selected_mode = st.multiselect("System Mode", sorted(filtered_options_df['system_mode'].dropna().unique()))
-    if selected_mode:
-        filtered_options_df = filtered_options_df[filtered_options_df['system_mode'].isin(selected_mode)]
-
-    selected_client = st.multiselect("Client Service Type", sorted(filtered_options_df['client_service_type'].dropna().unique()))
-    if selected_client:
-        filtered_options_df = filtered_options_df[filtered_options_df['client_service_type'].isin(selected_client)]
-
-    selected_client_fec = st.multiselect("Client FEC Mode", sorted(filtered_options_df['client_fec_mode'].dropna().unique()))
-    if selected_client_fec:
-        filtered_options_df = filtered_options_df[filtered_options_df['client_fec_mode'].isin(selected_client_fec)]
-
-    selected_uplink = st.multiselect("Uplink Service Type", sorted(filtered_options_df['uplink_service_type'].dropna().unique()))
-    if selected_uplink:
-        filtered_options_df = filtered_options_df[filtered_options_df['uplink_service_type'].isin(selected_uplink)]
-
-    selected_uplink_fec = st.multiselect("Uplink FEC Mode", sorted(filtered_options_df['uplink_fec_mode'].dropna().unique()))
-    if selected_uplink_fec:
-        filtered_options_df = filtered_options_df[filtered_options_df['uplink_fec_mode'].isin(selected_uplink_fec)]
-
-    selected_modulation = st.multiselect("Modulation Format", sorted(filtered_options_df['modulation_format'].dropna().unique()))
-    if selected_modulation:
-        filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
-
-    selected_frame_size = st.multiselect("Frame Size", sorted(filtered_options_df['frame_size'].dropna().unique()))
-    if selected_frame_size:
-        filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
+    # -------------------------------------------------------------------------------------------------- #
 
     st.header("🆔 Filter by ID")
     id_input = st.text_input("Enter IDs (comma-separated)", value="")
@@ -120,6 +110,8 @@ with st.sidebar:
     latency_filter_type = st.radio("Filter by Latency:", ["Show All", "Above", "Below"], horizontal=True)
     latency_threshold = st.number_input("Latency Threshold (μSec)", min_value=0.0, step=0.1)
 
+    # -------------------------------------------------------------------------------------------------- #
+
     st.header("🧩 Columns to Display")
     st.caption("Toggle columns on/off to display in the table:")
 
@@ -128,30 +120,13 @@ with st.sidebar:
         checkbox_columns[col] = st.checkbox(col, value=True)
     selected_columns = [col for col, show in checkbox_columns.items() if show]
 
+    # -------------------------------------------------------------------------------------------------- #
+
 # --- Apply filters ---
 filtered_df = df.copy()
-if selected_product:
-    filtered_df = filtered_df[filtered_df['product_name'].isin(selected_product)]
-if selected_hw:
-    filtered_df = filtered_df[filtered_df['hardware_version'].isin(selected_hw)]
-if selected_fw:
-    filtered_df = filtered_df[filtered_df['firmware_version'].isin(selected_fw)]
-if selected_traffic_app:
-    filtered_df = filtered_df[filtered_df['traffic_generator_application'].isin(selected_traffic_app)]
-if selected_mode:
-    filtered_df = filtered_df[filtered_df['system_mode'].isin(selected_mode)]
-if selected_client:
-    filtered_df = filtered_df[filtered_df['client_service_type'].isin(selected_client)]
-if selected_client_fec:
-    filtered_df = filtered_df[filtered_df['client_fec_mode'].isin(selected_client_fec)]
-if selected_uplink:
-    filtered_df = filtered_df[filtered_df['uplink_service_type'].isin(selected_uplink)]
-if selected_uplink_fec:
-    filtered_df = filtered_df[filtered_df['uplink_fec_mode'].isin(selected_uplink_fec)]
-if selected_modulation:
-    filtered_df = filtered_df[filtered_df['modulation_format'].isin(selected_modulation)]
-if selected_frame_size:
-    filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
+for key, selected_vals in selections.items():
+    if selected_vals:
+        filtered_df = filtered_df[filtered_df[key].isin(selected_vals)]
 
 if id_list:
     filtered_df = filtered_df[filtered_df['id'].isin(id_list)]
