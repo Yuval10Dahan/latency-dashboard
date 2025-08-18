@@ -33,7 +33,7 @@ df = load_data()
 logo_path = os.path.join(os.path.dirname(__file__), 'Packetlight Logo.png')
 st.image(Image.open(logo_path), width=250)
 st.title("PacketLight - Latency Results")
-st.subheader("(The measurement was taken using a setup with two connected devices)")
+st.subheader("(The measurement was taken using a setup with 2 devices)")
 
 # --- Define renamed display columns ---
 display_columns_map = {
