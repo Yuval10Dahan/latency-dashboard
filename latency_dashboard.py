@@ -55,6 +55,7 @@ display_columns_map = {
     'uplink_service_type': 'Uplink Service Type',
     'uplink_fec_mode': 'Uplink FEC Mode',
     'modulation_format': 'Modulation Format',
+    'uplink_transceiver': 'Uplink Transceiver',
     'frame_size': 'Frame Size',
     'result': 'Latency (uSecs)'
 }
@@ -111,6 +112,10 @@ with st.sidebar:
     if selected_modulation:
         filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
 
+    selected_uplink_transceiver = st.multiselect("Uplink Transceiver", sorted(filtered_options_df['uplink_transceiver'].dropna().unique()))
+    if selected_uplink_transceiver:
+        filtered_options_df = filtered_options_df[filtered_options_df['uplink_transceiver'].isin(selected_uplink_transceiver)]
+
     selected_frame_size = st.multiselect("Frame Size", sorted(filtered_options_df['frame_size'].dropna().unique()))
     if selected_frame_size:
         filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
@@ -166,6 +171,8 @@ if selected_uplink_fec:
     filtered_df = filtered_df[filtered_df['uplink_fec_mode'].isin(selected_uplink_fec)]
 if selected_modulation:
     filtered_df = filtered_df[filtered_df['modulation_format'].isin(selected_modulation)]
+if selected_uplink_transceiver:
+    filtered_df = filtered_df[filtered_df['uplink_transceiver'].isin(selected_uplink_transceiver)]
 if selected_frame_size:
     filtered_df = filtered_df[filtered_df['frame_size'].isin(selected_frame_size)]
 if id_list:
