@@ -6,6 +6,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from PIL import Image
 import io
+from openpyxl.utils import get_column_letter
+
 
 
 # --- DB Connection ---
@@ -195,27 +197,27 @@ st.dataframe(display_df[selected_columns], use_container_width=True)
 # --- Optional Download as real Excel with nice column widths ---
 export_df = display_df[selected_columns]
 
-# Create an in-memory output file for the Excel file
 output = io.BytesIO()
+sheet_name = "Latency Results"
 
-with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-    sheet_name = "Latency Results"
+with pd.ExcelWriter(output, engine="openpyxl") as writer:
     export_df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-    workbook  = writer.book
+    workbook = writer.book
     worksheet = writer.sheets[sheet_name]
 
-    # Autofit-like behavior: set width based on longest value in each column
-    for i, col in enumerate(export_df.columns):
-        # Convert everything to string and get max length
+    # Auto-size columns based on max length in each column
+    for col_idx, col_name in enumerate(export_df.columns, start=1):
+        # longest between header and cell values
         max_len = max(
-            export_df[col].astype(str).map(len).max(),
-            len(col)
-        ) + 2  # a little padding
+            export_df[col_name].astype(str).map(len).max(),
+            len(col_name),
+        ) + 2  # padding
 
-        worksheet.set_column(i, i, max_len)
+        col_letter = get_column_letter(col_idx)
+        worksheet.column_dimensions[col_letter].width = max_len
 
-# Move back to the beginning of the BytesIO buffer
+# rewind buffer
 output.seek(0)
 
 st.download_button(
