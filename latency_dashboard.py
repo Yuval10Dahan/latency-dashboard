@@ -30,27 +30,27 @@ def load_data():
     # df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
     df = df.drop(columns=[col for col in ['step'] if col in df.columns])
 
-    # desired_order = [
-    #     'id',
-    #     'product_name',
-    #     'datetime',
-    #     'serial_number',
-    #     'part_number',
-    #     'hardware_version',
-    #     'firmware_version',
-    #     'traffic_generator_application',
-    #     'system_mode',
-    #     'client_service_type',
-    #     'client_fec_mode',
-    #     'uplink_service_type',
-    #     'uplink_fec_mode',
-    #     'modulation_format',
-    #     'uplink_transceiver',   
-    #     'frame_size',
-    #     'result',
-    # ]
-    # # keep only columns that actually exist
-    # df = df[[c for c in desired_order if c in df.columns]]
+    desired_order = [
+        'id',
+        'product_name',
+        'datetime',
+        'serial_number',
+        'part_number',
+        'hardware_version',
+        'firmware_version',
+        'traffic_generator_application',
+        'system_mode',
+        'client_service_type',
+        'client_fec_mode',
+        'uplink_service_type',
+        'uplink_fec_mode',
+        'modulation_format',
+        'uplink_transceiver',   
+        'frame_size',
+        'result',
+    ]
+    # keep only columns that actually exist
+    df = df[[c for c in desired_order if c in df.columns]]
     
     return df
 
