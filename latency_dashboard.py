@@ -254,7 +254,7 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
             len(col)
         ) + 2  # a little padding
 
-        worksheet.set_column(i, i, max_len)
+        worksheet.set_column(i, i, max_len, center_format)
 
 # Move back to the beginning of the BytesIO buffer
 output.seek(0)
