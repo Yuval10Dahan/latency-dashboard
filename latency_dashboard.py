@@ -195,33 +195,66 @@ st.dataframe(display_df[selected_columns], use_container_width=True)
 
 
 # ============ option 3 =========== # 
-# --- Optional Download as real Excel with nice column widths ---
+# --- Optional Download as real Excel with professional formatting ---
 export_df = display_df[selected_columns]
 
-# Create an in-memory output file for the Excel file
 output = io.BytesIO()
 
 with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     sheet_name = "Latency Results"
-    export_df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-    workbook  = writer.book
+    # Offset table by 5 rows to place logo + title
+    export_df.to_excel(writer, index=False, sheet_name=sheet_name, startrow=5)
+
+    workbook = writer.book
     worksheet = writer.sheets[sheet_name]
 
-    # Create a center alignment format
-    center_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+    # ===== Insert PacketLight Logo =====
+    logo_path = os.path.join(os.path.dirname(__file__), "Packetlight Logo.png")
+    worksheet.insert_image('A1', logo_path, {'x_scale': 0.5, 'y_scale': 0.5})
 
-    # Autofit-like behavior: set width based on longest value in each column
+    # ===== Title =====
+    title_format = workbook.add_format({
+        'bold': True,
+        'font_size': 16,
+        'align': 'left',
+        'valign': 'vcenter'
+    })
+    worksheet.write('A4', 'PacketLight Latency Test Results', title_format)
+
+    # ===== Header Formatting =====
+    header_format = workbook.add_format({
+        'bold': True,
+        'align': 'center',
+        'valign': 'vcenter',
+        'bg_color': '#D9E1F2',
+        'border': 1
+    })
+
+    # Rewrite header row with formatting
+    for col_num, value in enumerate(export_df.columns.values):
+        worksheet.write(5, col_num, value, header_format)
+
+    # ===== Cell Formatting =====
+    cell_format = workbook.add_format({
+        'align': 'center',
+        'valign': 'vcenter',
+        'border': 1
+    })
+
+    # Apply formatting to all data rows
+    for row in range(len(export_df)):
+        for col in range(len(export_df.columns)):
+            worksheet.write(row + 6, col, export_df.iloc[row, col], cell_format)
+
+    # ===== Auto-fit column widths =====
     for i, col in enumerate(export_df.columns):
-        # Convert everything to string and get max length
-        max_len = max(
-            export_df[col].astype(str).map(len).max(),
-            len(col)
-        ) + 2  # a little padding
+        max_len = max(export_df[col].astype(str).map(len).max(), len(col)) + 2
+        worksheet.set_column(i, i, max_len)
 
-        worksheet.set_column(i, i, max_len, center_format)
+    # ===== Freeze Header =====
+    worksheet.freeze_panes(6, 0)
 
-# Move back to the beginning of the BytesIO buffer
 output.seek(0)
 
 st.download_button(
