@@ -194,41 +194,6 @@ st.dataframe(display_df[selected_columns], use_container_width=True)
 # st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
 
 
-# ============ option 2 =========== #
-# # --- Optional Download as real Excel with nice column widths ---
-# export_df = display_df[selected_columns]
-
-# output = io.BytesIO()
-# sheet_name = "Latency Results"
-
-# with pd.ExcelWriter(output, engine="openpyxl") as writer:
-#     export_df.to_excel(writer, index=False, sheet_name=sheet_name)
-
-#     workbook = writer.book
-#     worksheet = writer.sheets[sheet_name]
-
-#     # Auto-size columns based on max length in each column
-#     for col_idx, col_name in enumerate(export_df.columns, start=1):
-#         # longest between header and cell values
-#         max_len = max(
-#             export_df[col_name].astype(str).map(len).max(),
-#             len(col_name),
-#         ) + 2  # padding
-
-#         col_letter = get_column_letter(col_idx)
-#         worksheet.column_dimensions[col_letter].width = max_len
-
-# # rewind buffer
-# output.seek(0)
-
-# st.download_button(
-#     "Download Filtered Results - Excel File",
-#     data=output,
-#     file_name="latency_results.xlsx",
-#     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-# )
-
-
 # ============ option 3 =========== # 
 # --- Optional Download as real Excel with nice column widths ---
 export_df = display_df[selected_columns]
