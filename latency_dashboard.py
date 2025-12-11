@@ -249,7 +249,7 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         max_len = max(
             export_df[col].astype(str).map(len).max(),
             len(col)
-        ) + 1  # a little padding
+        ) + 0  # a little padding
 
         worksheet.set_column(i, i, max_len)
 
