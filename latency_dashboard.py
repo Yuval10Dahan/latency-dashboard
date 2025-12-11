@@ -243,13 +243,16 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     workbook  = writer.book
     worksheet = writer.sheets[sheet_name]
 
+    # Create a center alignment format
+    center_format = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+
     # Autofit-like behavior: set width based on longest value in each column
     for i, col in enumerate(export_df.columns):
         # Convert everything to string and get max length
         max_len = max(
             export_df[col].astype(str).map(len).max(),
             len(col)
-        ) + 0  # a little padding
+        ) + 2  # a little padding
 
         worksheet.set_column(i, i, max_len)
 
