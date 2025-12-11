@@ -188,10 +188,10 @@ st.dataframe(display_df[selected_columns], use_container_width=True)
 
 # =========================================== Download Options ============================================== #
 
-# ============ option 1 =========== #
-# --- Optional Download ---
-csv = display_df[selected_columns].to_csv(index=False)
-st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
+# # ============ option 1 =========== #
+# # --- Optional Download ---
+# csv = display_df[selected_columns].to_csv(index=False)
+# st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
 
 
 # ============ option 2 =========== #
@@ -229,36 +229,36 @@ st.download_button("Download Filtered Results - Excel File", csv, "latency_resul
 # )
 
 
-# # ============ option 3 =========== # 
-# # --- Optional Download as real Excel with nice column widths ---
-# export_df = display_df[selected_columns]
+# ============ option 3 =========== # 
+# --- Optional Download as real Excel with nice column widths ---
+export_df = display_df[selected_columns]
 
-# # Create an in-memory output file for the Excel file
-# output = io.BytesIO()
+# Create an in-memory output file for the Excel file
+output = io.BytesIO()
 
-# with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-#     sheet_name = "Latency Results"
-#     export_df.to_excel(writer, index=False, sheet_name=sheet_name)
+with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+    sheet_name = "Latency Results"
+    export_df.to_excel(writer, index=False, sheet_name=sheet_name)
 
-#     workbook  = writer.book
-#     worksheet = writer.sheets[sheet_name]
+    workbook  = writer.book
+    worksheet = writer.sheets[sheet_name]
 
-#     # Autofit-like behavior: set width based on longest value in each column
-#     for i, col in enumerate(export_df.columns):
-#         # Convert everything to string and get max length
-#         max_len = max(
-#             export_df[col].astype(str).map(len).max(),
-#             len(col)
-#         ) + 2  # a little padding
+    # Autofit-like behavior: set width based on longest value in each column
+    for i, col in enumerate(export_df.columns):
+        # Convert everything to string and get max length
+        max_len = max(
+            export_df[col].astype(str).map(len).max(),
+            len(col)
+        ) + 1  # a little padding
 
-#         worksheet.set_column(i, i, max_len)
+        worksheet.set_column(i, i, max_len)
 
-# # Move back to the beginning of the BytesIO buffer
-# output.seek(0)
+# Move back to the beginning of the BytesIO buffer
+output.seek(0)
 
-# st.download_button(
-#     "Download Filtered Results - Excel File",
-#     data=output,
-#     file_name="latency_results.xlsx",
-#     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-# )
+st.download_button(
+    "Download Filtered Results - Excel File",
+    data=output,
+    file_name="latency_results.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+)
