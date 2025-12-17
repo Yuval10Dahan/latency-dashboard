@@ -6,7 +6,6 @@ import pandas as pd
 from sqlalchemy import create_engine
 from PIL import Image
 import io
-from openpyxl.utils import get_column_letter
 
 
 
