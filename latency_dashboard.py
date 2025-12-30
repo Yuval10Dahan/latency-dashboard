@@ -165,7 +165,7 @@ with st.sidebar:
 
         st.rerun()
 
-    st.button("🔄 Reset Filters", on_click=reset_all_filters, use_container_width=True)
+    st.button("🔄 Reset Button", on_click=reset_all_filters, use_container_width=True)
 
     st.header("🔍 Filters")
 
