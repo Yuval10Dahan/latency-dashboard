@@ -7,8 +7,6 @@ from sqlalchemy import create_engine
 from PIL import Image
 import io
 
-
-
 # --- DB Connection ---
 DB_PATH = os.path.join(os.path.dirname(__file__), 'latency_results.db')
 engine = create_engine(f'sqlite:///{DB_PATH}')
@@ -26,7 +24,6 @@ def load_data():
         df['result'] = pd.to_numeric(df['result'], errors='coerce')
 
     # Drop unused columns
-    # df = df.drop(columns=[col for col in ['step', 'id'] if col in df.columns])
     df = df.drop(columns=[col for col in ['step'] if col in df.columns])
 
     desired_order = [
@@ -44,13 +41,11 @@ def load_data():
         'uplink_service_type',
         'uplink_fec_mode',
         'modulation_format',
-        'uplink_transceiver',   
+        'uplink_transceiver',
         'frame_size',
         'result',
     ]
-    # keep only columns that actually exist
     df = df[[c for c in desired_order if c in df.columns]]
-    
     return df
 
 df = load_data()
@@ -82,97 +77,328 @@ display_columns_map = {
     'result': 'Latency (uSecs)'
 }
 
-# --- Sidebar Filters and Column Toggles ---
+# ======================================================================================
+# Query-params persistence helpers (survive F5 refresh)
+# ======================================================================================
+
+QP = st.query_params  # behaves like a dict[str, str|list[str]]
+
+def qp_get_list(key: str) -> list[str]:
+    """Get a list from query params (supports repeated keys or comma-separated)."""
+    if key not in QP:
+        return []
+    val = QP.get(key)
+    if isinstance(val, list):
+        out = []
+        for x in val:
+            out.extend([p for p in str(x).split(",") if p != ""])
+        return out
+    return [p for p in str(val).split(",") if p != ""]
+
+def qp_get_str(key: str, default: str = "") -> str:
+    if key not in QP:
+        return default
+    val = QP.get(key)
+    if isinstance(val, list):
+        return str(val[0]) if val else default
+    return str(val)
+
+def qp_get_float(key: str, default: float = 0.0) -> float:
+    s = qp_get_str(key, "")
+    try:
+        return float(s)
+    except Exception:
+        return default
+
+def qp_set_list(key: str, values: list) -> None:
+    """Store list as comma-separated string (more compact URL)."""
+    if values:
+        QP[key] = ",".join([str(x) for x in values])
+    else:
+        QP.pop(key, None)
+
+def qp_set_str(key: str, value: str, default: str = "") -> None:
+    if value is None or value == default:
+        QP.pop(key, None)
+    else:
+        QP[key] = str(value)
+
+def qp_set_float(key: str, value: float, default: float = 0.0) -> None:
+    if value is None or float(value) == float(default):
+        QP.pop(key, None)
+    else:
+        # trim ugly floats in URL
+        QP[key] = str(float(value))
+
+# Defaults
+DEFAULT_LAT_FILTER = "Show All"
+DEFAULT_LAT_THRESHOLD = 0.0
+
+# Keys for session_state cleanup (reset)
+FILTER_WIDGET_KEYS = [
+    "f_product", "f_hw", "f_fw", "f_tg", "f_mode", "f_client", "f_client_fec",
+    "f_uplink", "f_uplink_fec", "f_mod", "f_uplink_tr", "f_frame",
+    "f_id_input", "f_lat_type", "f_lat_thresh",
+]
+
+# ======================================================================================
+# Sidebar
+# ======================================================================================
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
 
-    # -------------------------------------------------------------------------------------------------- #
+    # --- Reset button ---
+    def reset_all_filters():
+        # clear query params
+        st.query_params.clear()
+
+        # clear widget states
+        for k in FILTER_WIDGET_KEYS:
+            if k in st.session_state:
+                del st.session_state[k]
+
+        # also clear column checkboxes
+        # (they are dynamic keys: "col_<name>")
+        for k in list(st.session_state.keys()):
+            if str(k).startswith("col_"):
+                del st.session_state[k]
+
+        st.rerun()
+
+    st.button("🔄 Reset Filters", on_click=reset_all_filters, use_container_width=True)
 
     st.header("🔍 Filters")
 
-    # Start with full df
+    # Start with full df for cascading options
     filtered_options_df = df.copy()
 
-    # Collect user selections (initially unfiltered)
-    selected_product = st.multiselect("Product Name", sorted(df['product_name'].dropna().unique()))
+    # ---- 1) Product ----
+    product_options = sorted(df['product_name'].dropna().unique())
+    selected_product_default = [x for x in qp_get_list("product") if x in product_options]
+    selected_product = st.multiselect(
+        "Product Name",
+        product_options,
+        default=selected_product_default,
+        key="f_product"
+    )
     if selected_product:
         filtered_options_df = filtered_options_df[filtered_options_df['product_name'].isin(selected_product)]
 
-    selected_hw = st.multiselect("Hardware Version", sorted(filtered_options_df['hardware_version'].dropna().unique()))
+    # ---- 2) HW ----
+    hw_options = sorted(filtered_options_df['hardware_version'].dropna().unique())
+    selected_hw_default = [x for x in qp_get_list("hw") if x in hw_options]
+    selected_hw = st.multiselect(
+        "Hardware Version",
+        hw_options,
+        default=selected_hw_default,
+        key="f_hw"
+    )
     if selected_hw:
         filtered_options_df = filtered_options_df[filtered_options_df['hardware_version'].isin(selected_hw)]
 
-    selected_fw = st.multiselect("Firmware Version", sorted(filtered_options_df['firmware_version'].dropna().unique()))
+    # ---- 3) FW ----
+    fw_options = sorted(filtered_options_df['firmware_version'].dropna().unique())
+    selected_fw_default = [x for x in qp_get_list("fw") if x in fw_options]
+    selected_fw = st.multiselect(
+        "Firmware Version",
+        fw_options,
+        default=selected_fw_default,
+        key="f_fw"
+    )
     if selected_fw:
         filtered_options_df = filtered_options_df[filtered_options_df['firmware_version'].isin(selected_fw)]
 
-    selected_traffic_app = st.multiselect("Traffic Generator Application", sorted(filtered_options_df['traffic_generator_application'].dropna().unique()))
+    # ---- 4) Traffic app ----
+    tg_options = sorted(filtered_options_df['traffic_generator_application'].dropna().unique())
+    selected_traffic_app_default = [x for x in qp_get_list("tg") if x in tg_options]
+    selected_traffic_app = st.multiselect(
+        "Traffic Generator Application",
+        tg_options,
+        default=selected_traffic_app_default,
+        key="f_tg"
+    )
     if selected_traffic_app:
         filtered_options_df = filtered_options_df[filtered_options_df['traffic_generator_application'].isin(selected_traffic_app)]
 
-    selected_mode = st.multiselect("System Mode", sorted(filtered_options_df['system_mode'].dropna().unique()))
+    # ---- 5) System Mode ----
+    mode_options = sorted(filtered_options_df['system_mode'].dropna().unique())
+    selected_mode_default = [x for x in qp_get_list("mode") if x in mode_options]
+    selected_mode = st.multiselect(
+        "System Mode",
+        mode_options,
+        default=selected_mode_default,
+        key="f_mode"
+    )
     if selected_mode:
         filtered_options_df = filtered_options_df[filtered_options_df['system_mode'].isin(selected_mode)]
 
-    selected_client = st.multiselect("Client Service Type", sorted(filtered_options_df['client_service_type'].dropna().unique()))
+    # ---- 6) Client Service Type ----
+    client_options = sorted(filtered_options_df['client_service_type'].dropna().unique())
+    selected_client_default = [x for x in qp_get_list("client") if x in client_options]
+    selected_client = st.multiselect(
+        "Client Service Type",
+        client_options,
+        default=selected_client_default,
+        key="f_client"
+    )
     if selected_client:
         filtered_options_df = filtered_options_df[filtered_options_df['client_service_type'].isin(selected_client)]
 
-    selected_client_fec = st.multiselect("Client FEC Mode", sorted(filtered_options_df['client_fec_mode'].dropna().unique()))
+    # ---- 7) Client FEC ----
+    client_fec_options = sorted(filtered_options_df['client_fec_mode'].dropna().unique())
+    selected_client_fec_default = [x for x in qp_get_list("client_fec") if x in client_fec_options]
+    selected_client_fec = st.multiselect(
+        "Client FEC Mode",
+        client_fec_options,
+        default=selected_client_fec_default,
+        key="f_client_fec"
+    )
     if selected_client_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['client_fec_mode'].isin(selected_client_fec)]
 
-    selected_uplink = st.multiselect("Uplink Service Type", sorted(filtered_options_df['uplink_service_type'].dropna().unique()))
+    # ---- 8) Uplink Service Type ----
+    uplink_options = sorted(filtered_options_df['uplink_service_type'].dropna().unique())
+    selected_uplink_default = [x for x in qp_get_list("uplink") if x in uplink_options]
+    selected_uplink = st.multiselect(
+        "Uplink Service Type",
+        uplink_options,
+        default=selected_uplink_default,
+        key="f_uplink"
+    )
     if selected_uplink:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_service_type'].isin(selected_uplink)]
 
-    selected_uplink_fec = st.multiselect("Uplink FEC Mode", sorted(filtered_options_df['uplink_fec_mode'].dropna().unique()))
+    # ---- 9) Uplink FEC ----
+    uplink_fec_options = sorted(filtered_options_df['uplink_fec_mode'].dropna().unique())
+    selected_uplink_fec_default = [x for x in qp_get_list("uplink_fec") if x in uplink_fec_options]
+    selected_uplink_fec = st.multiselect(
+        "Uplink FEC Mode",
+        uplink_fec_options,
+        default=selected_uplink_fec_default,
+        key="f_uplink_fec"
+    )
     if selected_uplink_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_fec_mode'].isin(selected_uplink_fec)]
 
-    selected_modulation = st.multiselect("Modulation Format", sorted(filtered_options_df['modulation_format'].dropna().unique()))
+    # ---- 10) Modulation ----
+    modulation_options = sorted(filtered_options_df['modulation_format'].dropna().unique())
+    selected_modulation_default = [x for x in qp_get_list("mod") if x in modulation_options]
+    selected_modulation = st.multiselect(
+        "Modulation Format",
+        modulation_options,
+        default=selected_modulation_default,
+        key="f_mod"
+    )
     if selected_modulation:
         filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
 
-    selected_uplink_transceiver = st.multiselect("Uplink Transceiver", sorted(filtered_options_df['uplink_transceiver'].dropna().unique()))
+    # ---- 11) Uplink Transceiver ----
+    uplink_tr_options = sorted(filtered_options_df['uplink_transceiver'].dropna().unique())
+    selected_uplink_transceiver_default = [x for x in qp_get_list("uplink_tr") if x in uplink_tr_options]
+    selected_uplink_transceiver = st.multiselect(
+        "Uplink Transceiver",
+        uplink_tr_options,
+        default=selected_uplink_transceiver_default,
+        key="f_uplink_tr"
+    )
     if selected_uplink_transceiver:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_transceiver'].isin(selected_uplink_transceiver)]
 
-    selected_frame_size = st.multiselect("Frame Size", sorted(filtered_options_df['frame_size'].dropna().unique()))
+    # ---- 12) Frame size ----
+    frame_options = sorted(filtered_options_df['frame_size'].dropna().unique())
+    selected_frame_size_default = [x for x in qp_get_list("frame") if x in frame_options]
+    selected_frame_size = st.multiselect(
+        "Frame Size",
+        frame_options,
+        default=selected_frame_size_default,
+        key="f_frame"
+    )
     if selected_frame_size:
         filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
 
     # -------------------------------------------------------------------------------------------------- #
-
     st.header("🆔 Filter by ID")
-    id_input = st.text_input("Enter IDs (comma-separated)", value="")
+    id_input_default = qp_get_str("ids", "")
+    id_input = st.text_input("Enter IDs (comma-separated)", value=id_input_default, key="f_id_input")
     id_list = []
     if id_input.strip():
         try:
             id_list = [int(x.strip()) for x in id_input.split(",") if x.strip().isdigit()]
         except ValueError:
             st.warning("Please enter only integers separated by commas.")
-    
-    # -------------------------------------------------------------------------------------------------- #
 
+    # -------------------------------------------------------------------------------------------------- #
     st.header("⏱️ Latency Filter (μSec)")
-    latency_filter_type = st.radio("Filter by Latency:", ["Show All", "Above", "Below"], horizontal=True)
-    latency_threshold = st.number_input("Latency Threshold (μSec)", min_value=0.0, step=0.1)
+    lat_type_default = qp_get_str("lat_type", DEFAULT_LAT_FILTER)
+    if lat_type_default not in ["Show All", "Above", "Below"]:
+        lat_type_default = DEFAULT_LAT_FILTER
+
+    latency_filter_type = st.radio(
+        "Filter by Latency:",
+        ["Show All", "Above", "Below"],
+        horizontal=True,
+        index=["Show All", "Above", "Below"].index(lat_type_default),
+        key="f_lat_type"
+    )
+    latency_threshold_default = qp_get_float("lat_th", DEFAULT_LAT_THRESHOLD)
+    latency_threshold = st.number_input(
+        "Latency Threshold (μSec)",
+        min_value=0.0,
+        step=0.1,
+        value=float(latency_threshold_default),
+        key="f_lat_thresh"
+    )
 
     # -------------------------------------------------------------------------------------------------- #
-
     st.header("🧩 Columns to Display")
     st.caption("Toggle columns on/off to display in the table:")
 
+    # Column persistence too (optional)
+    # store selected columns as query param "cols"
+    default_cols = list(df.rename(columns=display_columns_map).columns)
+    cols_from_qp = qp_get_list("cols")
+    if cols_from_qp:
+        # keep only valid ones
+        cols_default = [c for c in cols_from_qp if c in default_cols]
+        if not cols_default:
+            cols_default = default_cols
+    else:
+        cols_default = default_cols
+
     checkbox_columns = {}
-    for col in df.rename(columns=display_columns_map).columns:
-        checkbox_columns[col] = st.checkbox(col, value=True)
+    for col in default_cols:
+        key = f"col_{col}"
+        checkbox_columns[col] = st.checkbox(col, value=(col in cols_default), key=key)
+
     selected_columns = [col for col, show in checkbox_columns.items() if show]
 
-    # -------------------------------------------------------------------------------------------------- #
+# ======================================================================================
+# Save current selections back into query params (so F5 keeps state)
+# ======================================================================================
+qp_set_list("product", selected_product)
+qp_set_list("hw", selected_hw)
+qp_set_list("fw", selected_fw)
+qp_set_list("tg", selected_traffic_app)
+qp_set_list("mode", selected_mode)
+qp_set_list("client", selected_client)
+qp_set_list("client_fec", selected_client_fec)
+qp_set_list("uplink", selected_uplink)
+qp_set_list("uplink_fec", selected_uplink_fec)
+qp_set_list("mod", selected_modulation)
+qp_set_list("uplink_tr", selected_uplink_transceiver)
+qp_set_list("frame", selected_frame_size)
 
-# --- Apply filters ---
+qp_set_str("ids", id_input, default="")
+qp_set_str("lat_type", latency_filter_type, default=DEFAULT_LAT_FILTER)
+qp_set_float("lat_th", latency_threshold, default=DEFAULT_LAT_THRESHOLD)
+
+qp_set_list("cols", selected_columns)
+
+# ======================================================================================
+# Apply filters
+# ======================================================================================
 filtered_df = df.copy()
+
 if selected_product:
     filtered_df = filtered_df[filtered_df['product_name'].isin(selected_product)]
 if selected_hw:
@@ -205,7 +431,6 @@ if latency_filter_type == "Above":
 elif latency_filter_type == "Below":
     filtered_df = filtered_df[filtered_df['result'] < latency_threshold]
 
-
 # --- Rename columns for display ---
 display_df = filtered_df.rename(columns=display_columns_map)
 
@@ -213,20 +438,8 @@ display_df = filtered_df.rename(columns=display_columns_map)
 st.subheader(f"Showing {len(display_df)} Records")
 st.dataframe(display_df[selected_columns], use_container_width=True)
 
-
-
 # =========================================== Download Options ============================================== #
-
-# # ============ option 1 =========== #
-# # --- Optional Download ---
-# csv = display_df[selected_columns].to_csv(index=False)
-# st.download_button("Download Filtered Results - Excel File", csv, "latency_results.csv", "text/csv")
-
-
-# ============ option 3 =========== # 
-# --- Optional Download as real Excel with professional formatting ---
 export_df = display_df[selected_columns]
-
 output = io.BytesIO()
 
 with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
