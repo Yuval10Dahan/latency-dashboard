@@ -127,7 +127,6 @@ def qp_set_float(key: str, value: float, default: float = 0.0) -> None:
     if value is None or float(value) == float(default):
         QP.pop(key, None)
     else:
-        # trim ugly floats in URL
         QP[key] = str(float(value))
 
 # Defaults
@@ -147,25 +146,23 @@ FILTER_WIDGET_KEYS = [
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
 
-    # --- Reset button ---
-    def reset_all_filters():
+    # --- Reset button (NO callback!) ---
+    reset_clicked = st.button("🔄 Reset Button", use_container_width=True)
+
+    if reset_clicked:
         # clear query params
         st.query_params.clear()
 
         # clear widget states
         for k in FILTER_WIDGET_KEYS:
-            if k in st.session_state:
-                del st.session_state[k]
+            st.session_state.pop(k, None)
 
-        # also clear column checkboxes
-        # (they are dynamic keys: "col_<name>")
+        # clear dynamic column checkbox states
         for k in list(st.session_state.keys()):
             if str(k).startswith("col_"):
-                del st.session_state[k]
+                st.session_state.pop(k, None)
 
         st.rerun()
-
-    st.button("🔄 Reset Button", on_click=reset_all_filters, use_container_width=True)
 
     st.header("🔍 Filters")
 
@@ -353,12 +350,9 @@ with st.sidebar:
     st.header("🧩 Columns to Display")
     st.caption("Toggle columns on/off to display in the table:")
 
-    # Column persistence too (optional)
-    # store selected columns as query param "cols"
     default_cols = list(df.rename(columns=display_columns_map).columns)
     cols_from_qp = qp_get_list("cols")
     if cols_from_qp:
-        # keep only valid ones
         cols_default = [c for c in cols_from_qp if c in default_cols]
         if not cols_default:
             cols_default = default_cols
