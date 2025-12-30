@@ -81,10 +81,9 @@ display_columns_map = {
 # Query-params persistence helpers (survive F5 refresh)
 # ======================================================================================
 
-QP = st.query_params  # behaves like a dict[str, str|list[str]]
+QP = st.query_params  # dict-like
 
 def qp_get_list(key: str) -> list[str]:
-    """Get a list from query params (supports repeated keys or comma-separated)."""
     if key not in QP:
         return []
     val = QP.get(key)
@@ -111,7 +110,6 @@ def qp_get_float(key: str, default: float = 0.0) -> float:
         return default
 
 def qp_set_list(key: str, values: list) -> None:
-    """Store list as comma-separated string (more compact URL)."""
     if values:
         QP[key] = ",".join([str(x) for x in values])
     else:
@@ -141,32 +139,41 @@ FILTER_WIDGET_KEYS = [
 ]
 
 # ======================================================================================
+# Reset mechanism for Streamlit 1.40.1 (NO st.rerun() inside callback)
+# ======================================================================================
+
+def _mark_reset():
+    st.session_state["_do_reset"] = True
+
+# If reset was requested in previous callback, perform it BEFORE creating widgets
+if st.session_state.get("_do_reset", False):
+    st.session_state["_do_reset"] = False
+
+    # clear URL state
+    st.query_params.clear()
+
+    # clear widget states
+    for k in FILTER_WIDGET_KEYS:
+        st.session_state.pop(k, None)
+
+    # clear dynamic column checkbox states
+    for k in list(st.session_state.keys()):
+        if str(k).startswith("col_"):
+            st.session_state.pop(k, None)
+
+    st.rerun()
+
+# ======================================================================================
 # Sidebar
 # ======================================================================================
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
 
-    # --- Reset button (NO callback!) ---
-    reset_clicked = st.button("🔄 Reset Button", use_container_width=True)
-
-    if reset_clicked:
-        # clear query params
-        st.query_params.clear()
-
-        # clear widget states
-        for k in FILTER_WIDGET_KEYS:
-            st.session_state.pop(k, None)
-
-        # clear dynamic column checkbox states
-        for k in list(st.session_state.keys()):
-            if str(k).startswith("col_"):
-                st.session_state.pop(k, None)
-
-        st.rerun()
+    # Reset button: callback ONLY marks reset, not rerun
+    st.button("🔄 Reset Button", on_click=_mark_reset, use_container_width=True)
 
     st.header("🔍 Filters")
 
-    # Start with full df for cascading options
     filtered_options_df = df.copy()
 
     # ---- 1) Product ----
@@ -184,24 +191,14 @@ with st.sidebar:
     # ---- 2) HW ----
     hw_options = sorted(filtered_options_df['hardware_version'].dropna().unique())
     selected_hw_default = [x for x in qp_get_list("hw") if x in hw_options]
-    selected_hw = st.multiselect(
-        "Hardware Version",
-        hw_options,
-        default=selected_hw_default,
-        key="f_hw"
-    )
+    selected_hw = st.multiselect("Hardware Version", hw_options, default=selected_hw_default, key="f_hw")
     if selected_hw:
         filtered_options_df = filtered_options_df[filtered_options_df['hardware_version'].isin(selected_hw)]
 
     # ---- 3) FW ----
     fw_options = sorted(filtered_options_df['firmware_version'].dropna().unique())
     selected_fw_default = [x for x in qp_get_list("fw") if x in fw_options]
-    selected_fw = st.multiselect(
-        "Firmware Version",
-        fw_options,
-        default=selected_fw_default,
-        key="f_fw"
-    )
+    selected_fw = st.multiselect("Firmware Version", fw_options, default=selected_fw_default, key="f_fw")
     if selected_fw:
         filtered_options_df = filtered_options_df[filtered_options_df['firmware_version'].isin(selected_fw)]
 
@@ -209,10 +206,7 @@ with st.sidebar:
     tg_options = sorted(filtered_options_df['traffic_generator_application'].dropna().unique())
     selected_traffic_app_default = [x for x in qp_get_list("tg") if x in tg_options]
     selected_traffic_app = st.multiselect(
-        "Traffic Generator Application",
-        tg_options,
-        default=selected_traffic_app_default,
-        key="f_tg"
+        "Traffic Generator Application", tg_options, default=selected_traffic_app_default, key="f_tg"
     )
     if selected_traffic_app:
         filtered_options_df = filtered_options_df[filtered_options_df['traffic_generator_application'].isin(selected_traffic_app)]
@@ -220,24 +214,14 @@ with st.sidebar:
     # ---- 5) System Mode ----
     mode_options = sorted(filtered_options_df['system_mode'].dropna().unique())
     selected_mode_default = [x for x in qp_get_list("mode") if x in mode_options]
-    selected_mode = st.multiselect(
-        "System Mode",
-        mode_options,
-        default=selected_mode_default,
-        key="f_mode"
-    )
+    selected_mode = st.multiselect("System Mode", mode_options, default=selected_mode_default, key="f_mode")
     if selected_mode:
         filtered_options_df = filtered_options_df[filtered_options_df['system_mode'].isin(selected_mode)]
 
     # ---- 6) Client Service Type ----
     client_options = sorted(filtered_options_df['client_service_type'].dropna().unique())
     selected_client_default = [x for x in qp_get_list("client") if x in client_options]
-    selected_client = st.multiselect(
-        "Client Service Type",
-        client_options,
-        default=selected_client_default,
-        key="f_client"
-    )
+    selected_client = st.multiselect("Client Service Type", client_options, default=selected_client_default, key="f_client")
     if selected_client:
         filtered_options_df = filtered_options_df[filtered_options_df['client_service_type'].isin(selected_client)]
 
@@ -245,10 +229,7 @@ with st.sidebar:
     client_fec_options = sorted(filtered_options_df['client_fec_mode'].dropna().unique())
     selected_client_fec_default = [x for x in qp_get_list("client_fec") if x in client_fec_options]
     selected_client_fec = st.multiselect(
-        "Client FEC Mode",
-        client_fec_options,
-        default=selected_client_fec_default,
-        key="f_client_fec"
+        "Client FEC Mode", client_fec_options, default=selected_client_fec_default, key="f_client_fec"
     )
     if selected_client_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['client_fec_mode'].isin(selected_client_fec)]
@@ -256,12 +237,7 @@ with st.sidebar:
     # ---- 8) Uplink Service Type ----
     uplink_options = sorted(filtered_options_df['uplink_service_type'].dropna().unique())
     selected_uplink_default = [x for x in qp_get_list("uplink") if x in uplink_options]
-    selected_uplink = st.multiselect(
-        "Uplink Service Type",
-        uplink_options,
-        default=selected_uplink_default,
-        key="f_uplink"
-    )
+    selected_uplink = st.multiselect("Uplink Service Type", uplink_options, default=selected_uplink_default, key="f_uplink")
     if selected_uplink:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_service_type'].isin(selected_uplink)]
 
@@ -269,10 +245,7 @@ with st.sidebar:
     uplink_fec_options = sorted(filtered_options_df['uplink_fec_mode'].dropna().unique())
     selected_uplink_fec_default = [x for x in qp_get_list("uplink_fec") if x in uplink_fec_options]
     selected_uplink_fec = st.multiselect(
-        "Uplink FEC Mode",
-        uplink_fec_options,
-        default=selected_uplink_fec_default,
-        key="f_uplink_fec"
+        "Uplink FEC Mode", uplink_fec_options, default=selected_uplink_fec_default, key="f_uplink_fec"
     )
     if selected_uplink_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_fec_mode'].isin(selected_uplink_fec)]
@@ -281,10 +254,7 @@ with st.sidebar:
     modulation_options = sorted(filtered_options_df['modulation_format'].dropna().unique())
     selected_modulation_default = [x for x in qp_get_list("mod") if x in modulation_options]
     selected_modulation = st.multiselect(
-        "Modulation Format",
-        modulation_options,
-        default=selected_modulation_default,
-        key="f_mod"
+        "Modulation Format", modulation_options, default=selected_modulation_default, key="f_mod"
     )
     if selected_modulation:
         filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
@@ -293,10 +263,7 @@ with st.sidebar:
     uplink_tr_options = sorted(filtered_options_df['uplink_transceiver'].dropna().unique())
     selected_uplink_transceiver_default = [x for x in qp_get_list("uplink_tr") if x in uplink_tr_options]
     selected_uplink_transceiver = st.multiselect(
-        "Uplink Transceiver",
-        uplink_tr_options,
-        default=selected_uplink_transceiver_default,
-        key="f_uplink_tr"
+        "Uplink Transceiver", uplink_tr_options, default=selected_uplink_transceiver_default, key="f_uplink_tr"
     )
     if selected_uplink_transceiver:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_transceiver'].isin(selected_uplink_transceiver)]
@@ -304,12 +271,7 @@ with st.sidebar:
     # ---- 12) Frame size ----
     frame_options = sorted(filtered_options_df['frame_size'].dropna().unique())
     selected_frame_size_default = [x for x in qp_get_list("frame") if x in frame_options]
-    selected_frame_size = st.multiselect(
-        "Frame Size",
-        frame_options,
-        default=selected_frame_size_default,
-        key="f_frame"
-    )
+    selected_frame_size = st.multiselect("Frame Size", frame_options, default=selected_frame_size_default, key="f_frame")
     if selected_frame_size:
         filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
 
@@ -439,17 +401,14 @@ output = io.BytesIO()
 with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     sheet_name = "Latency Results"
 
-    # Offset table by 5 rows to place logo + title
     export_df.to_excel(writer, index=False, sheet_name=sheet_name, startrow=5)
 
     workbook = writer.book
     worksheet = writer.sheets[sheet_name]
 
-    # ===== Insert PacketLight Logo =====
     logo_path = os.path.join(os.path.dirname(__file__), "Packetlight Logo.png")
     worksheet.insert_image('A1', logo_path, {'x_scale': 0.5, 'y_scale': 0.5})
 
-    # ===== Title =====
     title_format = workbook.add_format({
         'bold': True,
         'font_size': 16,
@@ -458,7 +417,6 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     })
     worksheet.write('A4', 'PacketLight Latency Test Results', title_format)
 
-    # ===== Header Formatting =====
     header_format = workbook.add_format({
         'bold': True,
         'align': 'center',
@@ -467,28 +425,23 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         'border': 1
     })
 
-    # Rewrite header row with formatting
     for col_num, value in enumerate(export_df.columns.values):
         worksheet.write(5, col_num, value, header_format)
 
-    # ===== Cell Formatting =====
     cell_format = workbook.add_format({
         'align': 'center',
         'valign': 'vcenter',
         'border': 1
     })
 
-    # Apply formatting to all data rows
     for row in range(len(export_df)):
         for col in range(len(export_df.columns)):
             worksheet.write(row + 6, col, export_df.iloc[row, col], cell_format)
 
-    # ===== Auto-fit column widths =====
     for i, col in enumerate(export_df.columns):
         max_len = max(export_df[col].astype(str).map(len).max(), len(col)) + 2
         worksheet.set_column(i, i, max_len)
 
-    # ===== Freeze Header =====
     worksheet.freeze_panes(6, 0)
 
 output.seek(0)
