@@ -185,7 +185,7 @@ with st.sidebar:
         "Product Name",
         product_options,
         default=selected_product_default,
-        key=K("f_product")
+        key=K("f_product"),
         on_change=_close_dropdown
     )
     if selected_product:
