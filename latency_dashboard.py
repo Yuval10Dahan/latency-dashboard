@@ -184,7 +184,7 @@ def multiselect_autoclose(label: str, options: list, qp_key: str, state_key: str
     def _on_change():
         st.session_state[state_key] = st.session_state.get(widget_key, [])
         st.session_state[tok_key] += 1  # force remount => closes dropdown
-        st.rerun()
+        # st.rerun()
 
     return st.multiselect(
         label,
