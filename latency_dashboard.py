@@ -1,5 +1,5 @@
 import streamlit as st
-st.set_page_config(page_title="Latency Test Results", page_icon= "🔝",layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Latency Test Results", page_icon="🔝", layout="wide", initial_sidebar_state="expanded")
 
 import os
 import pandas as pd
@@ -132,21 +132,70 @@ DEFAULT_LAT_FILTER = "Show All"
 DEFAULT_LAT_THRESHOLD = 0.0
 
 # ======================================================================================
-# Widget remount token (THIS fixes the "chip still shown after reset" issue)
+# Widget remount token (reset button)
 # ======================================================================================
 if "reset_token" not in st.session_state:
     st.session_state["reset_token"] = 0
 
 reset_token = st.session_state["reset_token"]
 
-def K(name: str) -> str:
-    """Create a widget key that changes after reset -> forces widget remount."""
-    return f"{name}__rt{reset_token}"
+# ======================================================================================
+# Auto-close multiselect: remount-on-change + keep selection in stable session_state
+# ======================================================================================
+
+FILTER_KEYS = [
+    ("product", "sel_product"),
+    ("hw", "sel_hw"),
+    ("fw", "sel_fw"),
+    ("tg", "sel_tg"),
+    ("mode", "sel_mode"),
+    ("client", "sel_client"),
+    ("client_fec", "sel_client_fec"),
+    ("uplink", "sel_uplink"),
+    ("uplink_fec", "sel_uplink_fec"),
+    ("mod", "sel_mod"),
+    ("uplink_tr", "sel_uplink_tr"),
+    ("frame", "sel_frame"),
+]
+
+def multiselect_autoclose(label: str, options: list, qp_key: str, state_key: str):
+    """
+    Multiselect that closes after any change by remounting (key changes).
+    Selected values are stored in st.session_state[state_key].
+    """
+    tok_key = f"__tok__{state_key}__rt{reset_token}"
+
+    if tok_key not in st.session_state:
+        st.session_state[tok_key] = 0
+    if state_key not in st.session_state:
+        st.session_state[state_key] = []
+
+    widget_key = f"{state_key}__w__rt{reset_token}__{st.session_state[tok_key]}"
+
+    # Determine current selection
+    current = st.session_state[state_key]
+    if not current:
+        # first load: try query params
+        qp_default = [x for x in qp_get_list(qp_key) if x in options]
+        if qp_default:
+            current = qp_default
+            st.session_state[state_key] = current
+
+    def _on_change():
+        st.session_state[state_key] = st.session_state.get(widget_key, [])
+        st.session_state[tok_key] += 1  # force remount => closes dropdown
+        st.rerun()
+
+    return st.multiselect(
+        label,
+        options,
+        default=current,
+        key=widget_key,
+        on_change=_on_change
+    )
 
 # ======================================================================================
 # Reset mechanism for Streamlit 1.40.1
-# - callback ONLY marks reset
-# - top-of-script executes the reset before building widgets
 # ======================================================================================
 
 def _mark_reset():
@@ -155,8 +204,16 @@ def _mark_reset():
 if st.session_state.get("_do_reset", False):
     st.session_state["_do_reset"] = False
 
-    # clear URL query params (so refresh starts clean)
+    # clear URL query params
     st.query_params.clear()
+
+    # clear stable selections + tokens for the auto-close widgets
+    for _, state_key in FILTER_KEYS:
+        st.session_state.pop(state_key, None)
+        # remove all tokens keys for this reset token (safe)
+        for k in list(st.session_state.keys()):
+            if k.startswith(f"__tok__{state_key}__"):
+                st.session_state.pop(k, None)
 
     # increment token so ALL widgets remount with fresh state
     st.session_state["reset_token"] += 1
@@ -168,131 +225,87 @@ if st.session_state.get("_do_reset", False):
 # ======================================================================================
 with st.sidebar:
     st.subheader("Contact: Yuval Dahan")
-
     st.button("🔄 Reset Button", on_click=_mark_reset, use_container_width=True)
-
     st.header("🔍 Filters")
 
     filtered_options_df = df.copy()
 
     # ---- 1) Product ----
     product_options = sorted(df['product_name'].dropna().unique())
-    selected_product_default = [x for x in qp_get_list("product") if x in product_options]
-    selected_product = st.multiselect(
-        "Product Name",
-        product_options,
-        default=selected_product_default,
-        key=K("f_product")
-    )
+    selected_product = multiselect_autoclose("Product Name", product_options, "product", "sel_product")
     if selected_product:
         filtered_options_df = filtered_options_df[filtered_options_df['product_name'].isin(selected_product)]
 
     # ---- 2) HW ----
     hw_options = sorted(filtered_options_df['hardware_version'].dropna().unique())
-    selected_hw_default = [x for x in qp_get_list("hw") if x in hw_options]
-    selected_hw = st.multiselect("Hardware Version", hw_options, default=selected_hw_default, key=K("f_hw"))
+    selected_hw = multiselect_autoclose("Hardware Version", hw_options, "hw", "sel_hw")
     if selected_hw:
         filtered_options_df = filtered_options_df[filtered_options_df['hardware_version'].isin(selected_hw)]
 
     # ---- 3) FW ----
     fw_options = sorted(filtered_options_df['firmware_version'].dropna().unique())
-    selected_fw_default = [x for x in qp_get_list("fw") if x in fw_options]
-    selected_fw = st.multiselect("Firmware Version", fw_options, default=selected_fw_default, key=K("f_fw"))
+    selected_fw = multiselect_autoclose("Firmware Version", fw_options, "fw", "sel_fw")
     if selected_fw:
         filtered_options_df = filtered_options_df[filtered_options_df['firmware_version'].isin(selected_fw)]
 
     # ---- 4) Traffic app ----
     tg_options = sorted(filtered_options_df['traffic_generator_application'].dropna().unique())
-    selected_traffic_app_default = [x for x in qp_get_list("tg") if x in tg_options]
-    selected_traffic_app = st.multiselect(
-        "Traffic Generator Application",
-        tg_options,
-        default=selected_traffic_app_default,
-        key=K("f_tg")
-    )
+    selected_traffic_app = multiselect_autoclose("Traffic Generator Application", tg_options, "tg", "sel_tg")
     if selected_traffic_app:
         filtered_options_df = filtered_options_df[filtered_options_df['traffic_generator_application'].isin(selected_traffic_app)]
 
     # ---- 5) System Mode ----
     mode_options = sorted(filtered_options_df['system_mode'].dropna().unique())
-    selected_mode_default = [x for x in qp_get_list("mode") if x in mode_options]
-    selected_mode = st.multiselect("System Mode", mode_options, default=selected_mode_default, key=K("f_mode"))
+    selected_mode = multiselect_autoclose("System Mode", mode_options, "mode", "sel_mode")
     if selected_mode:
         filtered_options_df = filtered_options_df[filtered_options_df['system_mode'].isin(selected_mode)]
 
     # ---- 6) Client Service Type ----
     client_options = sorted(filtered_options_df['client_service_type'].dropna().unique())
-    selected_client_default = [x for x in qp_get_list("client") if x in client_options]
-    selected_client = st.multiselect("Client Service Type", client_options, default=selected_client_default, key=K("f_client"))
+    selected_client = multiselect_autoclose("Client Service Type", client_options, "client", "sel_client")
     if selected_client:
         filtered_options_df = filtered_options_df[filtered_options_df['client_service_type'].isin(selected_client)]
 
     # ---- 7) Client FEC ----
     client_fec_options = sorted(filtered_options_df['client_fec_mode'].dropna().unique())
-    selected_client_fec_default = [x for x in qp_get_list("client_fec") if x in client_fec_options]
-    selected_client_fec = st.multiselect(
-        "Client FEC Mode",
-        client_fec_options,
-        default=selected_client_fec_default,
-        key=K("f_client_fec")
-    )
+    selected_client_fec = multiselect_autoclose("Client FEC Mode", client_fec_options, "client_fec", "sel_client_fec")
     if selected_client_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['client_fec_mode'].isin(selected_client_fec)]
 
     # ---- 8) Uplink Service Type ----
     uplink_options = sorted(filtered_options_df['uplink_service_type'].dropna().unique())
-    selected_uplink_default = [x for x in qp_get_list("uplink") if x in uplink_options]
-    selected_uplink = st.multiselect("Uplink Service Type", uplink_options, default=selected_uplink_default, key=K("f_uplink"))
+    selected_uplink = multiselect_autoclose("Uplink Service Type", uplink_options, "uplink", "sel_uplink")
     if selected_uplink:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_service_type'].isin(selected_uplink)]
 
     # ---- 9) Uplink FEC ----
     uplink_fec_options = sorted(filtered_options_df['uplink_fec_mode'].dropna().unique())
-    selected_uplink_fec_default = [x for x in qp_get_list("uplink_fec") if x in uplink_fec_options]
-    selected_uplink_fec = st.multiselect(
-        "Uplink FEC Mode",
-        uplink_fec_options,
-        default=selected_uplink_fec_default,
-        key=K("f_uplink_fec")
-    )
+    selected_uplink_fec = multiselect_autoclose("Uplink FEC Mode", uplink_fec_options, "uplink_fec", "sel_uplink_fec")
     if selected_uplink_fec:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_fec_mode'].isin(selected_uplink_fec)]
 
     # ---- 10) Modulation ----
     modulation_options = sorted(filtered_options_df['modulation_format'].dropna().unique())
-    selected_modulation_default = [x for x in qp_get_list("mod") if x in modulation_options]
-    selected_modulation = st.multiselect(
-        "Modulation Format",
-        modulation_options,
-        default=selected_modulation_default,
-        key=K("f_mod")
-    )
+    selected_modulation = multiselect_autoclose("Modulation Format", modulation_options, "mod", "sel_mod")
     if selected_modulation:
         filtered_options_df = filtered_options_df[filtered_options_df['modulation_format'].isin(selected_modulation)]
 
     # ---- 11) Uplink Transceiver ----
     uplink_tr_options = sorted(filtered_options_df['uplink_transceiver'].dropna().unique())
-    selected_uplink_transceiver_default = [x for x in qp_get_list("uplink_tr") if x in uplink_tr_options]
-    selected_uplink_transceiver = st.multiselect(
-        "Uplink Transceiver",
-        uplink_tr_options,
-        default=selected_uplink_transceiver_default,
-        key=K("f_uplink_tr")
-    )
+    selected_uplink_transceiver = multiselect_autoclose("Uplink Transceiver", uplink_tr_options, "uplink_tr", "sel_uplink_tr")
     if selected_uplink_transceiver:
         filtered_options_df = filtered_options_df[filtered_options_df['uplink_transceiver'].isin(selected_uplink_transceiver)]
 
     # ---- 12) Frame size ----
     frame_options = sorted(filtered_options_df['frame_size'].dropna().unique())
-    selected_frame_size_default = [x for x in qp_get_list("frame") if x in frame_options]
-    selected_frame_size = st.multiselect("Frame Size", frame_options, default=selected_frame_size_default, key=K("f_frame"))
+    selected_frame_size = multiselect_autoclose("Frame Size", frame_options, "frame", "sel_frame")
     if selected_frame_size:
         filtered_options_df = filtered_options_df[filtered_options_df['frame_size'].isin(selected_frame_size)]
 
     # -------------------------------------------------------------------------------------------------- #
     st.header("🆔 Filter by ID")
     id_input_default = qp_get_str("ids", "")
-    id_input = st.text_input("Enter IDs (comma-separated)", value=id_input_default, key=K("f_id_input"))
+    id_input = st.text_input("Enter IDs (comma-separated)", value=id_input_default, key=f"f_id_input__rt{reset_token}")
     id_list = []
     if id_input.strip():
         try:
@@ -311,7 +324,7 @@ with st.sidebar:
         ["Show All", "Above", "Below"],
         horizontal=True,
         index=["Show All", "Above", "Below"].index(lat_type_default),
-        key=K("f_lat_type")
+        key=f"f_lat_type__rt{reset_token}"
     )
     latency_threshold_default = qp_get_float("lat_th", 0.0)
     latency_threshold = st.number_input(
@@ -319,7 +332,7 @@ with st.sidebar:
         min_value=0.0,
         step=0.1,
         value=float(latency_threshold_default),
-        key=K("f_lat_thresh")
+        key=f"f_lat_thresh__rt{reset_token}"
     )
 
     # -------------------------------------------------------------------------------------------------- #
@@ -335,7 +348,7 @@ with st.sidebar:
 
     checkbox_columns = {}
     for col in default_cols:
-        checkbox_columns[col] = st.checkbox(col, value=(col in cols_default), key=K(f"col_{col}"))
+        checkbox_columns[col] = st.checkbox(col, value=(col in cols_default), key=f"col_{col}__rt{reset_token}")
 
     selected_columns = [col for col, show in checkbox_columns.items() if show]
 
