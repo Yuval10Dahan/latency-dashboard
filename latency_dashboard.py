@@ -173,6 +173,9 @@ with st.sidebar:
 
     st.header("🔍 Filters")
 
+    def _close_dropdown():
+        st.session_state["_force_close"] = True
+
     filtered_options_df = df.copy()
 
     # ---- 1) Product ----
@@ -183,9 +186,14 @@ with st.sidebar:
         product_options,
         default=selected_product_default,
         key=K("f_product")
+        on_change=_close_dropdown
     )
     if selected_product:
         filtered_options_df = filtered_options_df[filtered_options_df['product_name'].isin(selected_product)]
+
+    if st.session_state.get("_force_close"):
+        st.session_state["_force_close"] = False
+        st.rerun()
 
     # ---- 2) HW ----
     hw_options = sorted(filtered_options_df['hardware_version'].dropna().unique())
