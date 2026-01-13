@@ -98,6 +98,13 @@ display_columns_map = {
     'result': 'Latency (uSecs)'
 }
 
+
+def highlight_latency_column(df):
+    return df.style.apply(
+        lambda _: ['background-color: #C6EFCE'] * len(df),
+        subset=['Latency (uSecs)']
+    )
+
 # ======================================================================================
 # Query-params persistence helpers (survive F5 refresh)
 # ======================================================================================
@@ -435,7 +442,8 @@ elif latency_filter_type == "Below":
 display_df = filtered_df.rename(columns=display_columns_map)
 
 st.subheader(f"Showing {len(display_df)} Records")
-st.dataframe(display_df[selected_columns], use_container_width=True)
+styled_df = highlight_latency_column(display_df[selected_columns])
+st.dataframe(styled_df, use_container_width=True)
 
 # =========================================== Download Options ============================================== #
 export_df = display_df[selected_columns]
