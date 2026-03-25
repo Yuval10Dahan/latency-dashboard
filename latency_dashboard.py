@@ -195,24 +195,22 @@ def multiselect_autoclose(label: str, options: list, qp_key: str, state_key: str
 
     if tok_key not in st.session_state:
         st.session_state[tok_key] = 0
+
+    # Initialize from query params only once
     if state_key not in st.session_state:
-        st.session_state[state_key] = []
+        st.session_state[state_key] = [x for x in qp_get_list(qp_key) if x in options]
+
+    # Keep only values that still exist in current options
+    current = [x for x in st.session_state[state_key] if x in options]
+    st.session_state[state_key] = current
 
     widget_key = f"{state_key}__w__rt{reset_token}__{st.session_state[tok_key]}"
 
-    # Determine current selection
-    current = st.session_state[state_key]
-    if not current:
-        # first load: try query params
-        qp_default = [x for x in qp_get_list(qp_key) if x in options]
-        if qp_default:
-            current = qp_default
-            st.session_state[state_key] = current
-
     def _on_change():
-        st.session_state[state_key] = st.session_state.get(widget_key, [])
-        st.session_state[tok_key] += 1  # force remount => closes dropdown
-        # st.rerun()
+        new_values = st.session_state.get(widget_key, [])
+        st.session_state[state_key] = new_values
+        qp_set_list(qp_key, new_values)   # update query params immediately
+        st.session_state[tok_key] += 1    # force remount => closes dropdown
 
     return st.multiselect(
         label,
