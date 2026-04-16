@@ -482,7 +482,11 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
     })
     for row in range(len(export_df)):
         for col in range(len(export_df.columns)):
-            worksheet.write(row + 6, col, export_df.iloc[row, col], cell_format)
+            val = export_df.iloc[row, col]
+            if pd.isna(val):
+                worksheet.write(row + 6, col, "", cell_format)
+            else:
+                worksheet.write(row + 6, col, val, cell_format)
 
     for i, col in enumerate(export_df.columns):
         max_len = max(export_df[col].astype(str).map(len).max(), len(col)) + 2
