@@ -331,13 +331,26 @@ with st.sidebar:
     # -------------------------------------------------------------------------------------------------- #
     st.header("🆔 Filter by ID")
     id_input_default = qp_get_str("ids", "")
-    id_input = st.text_input("Enter IDs (comma-separated)", value=id_input_default, key=f"f_id_input__rt{reset_token}")
+    id_input = st.text_input("Enter IDs (comma-separated or ranges, e.g., 1, 3, 5-10)", value=id_input_default, key=f"f_id_input__rt{reset_token}")
     id_list = []
     if id_input.strip():
         try:
-            id_list = [int(x.strip()) for x in id_input.split(",") if x.strip().isdigit()]
+            for part in id_input.split(","):
+                part = part.strip()
+                if not part:
+                    continue
+                if "-" in part:
+                    start_str, end_str = part.split("-", 1)
+                    start = int(start_str.strip())
+                    end = int(end_str.strip())
+                    if start <= end:
+                        id_list.extend(range(start, end + 1))
+                    else:
+                        id_list.extend(range(end, start + 1))
+                else:
+                    id_list.append(int(part))
         except ValueError:
-            st.warning("Please enter only integers separated by commas.")
+            st.warning("Please enter valid integers or ranges (e.g., 1, 3, 5-10).")
 
     # -------------------------------------------------------------------------------------------------- #
     st.header("⏱️ Latency Filter (μSec)")
