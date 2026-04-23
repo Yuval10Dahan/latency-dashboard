@@ -331,7 +331,7 @@ with st.sidebar:
     # -------------------------------------------------------------------------------------------------- #
     st.header("🆔 Filter by ID")
     id_input_default = qp_get_str("ids", "")
-    id_input = st.text_input("Enter IDs (comma separated or ranges)", value=id_input_default, key=f"f_id_input__rt{reset_token}")
+    id_input = st.text_input("Enter IDs (Comma separated or Ranges)", value=id_input_default, key=f"f_id_input__rt{reset_token}")
     id_list = []
     if id_input.strip():
         try:
