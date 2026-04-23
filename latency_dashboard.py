@@ -489,10 +489,11 @@ with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
                 worksheet.write(row + 6, col, val, cell_format)
 
     for i, col in enumerate(export_df.columns):
-        max_len = max(
-            export_df[col].map(lambda x: len(str(x)) if pd.notna(x) else 0).max(),
-            len(str(col))
-        ) + 2
+        col_max = export_df[col].map(lambda x: len(str(x)) if pd.notna(x) else 0).max()
+        if pd.isna(col_max):
+            max_len = len(str(col)) + 2
+        else:
+            max_len = max(int(col_max), len(str(col))) + 2
         worksheet.set_column(i, i, max_len)
 
     worksheet.freeze_panes(6, 0)
