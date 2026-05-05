@@ -210,7 +210,8 @@ def multiselect_autoclose(label: str, options: list, qp_key: str, state_key: str
         new_values = st.session_state.get(widget_key, [])
         st.session_state[state_key] = new_values
         qp_set_list(qp_key, new_values)   # update query params immediately
-        st.session_state[tok_key] += 1    # force remount => closes dropdown
+        # st.session_state[tok_key] += 1    # force remount => closes dropdown
+        st.session_state[tok_key] = st.session_state.get(tok_key, 0) + 1
 
     return st.multiselect(
         label,
